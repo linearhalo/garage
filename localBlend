@@ -1,0 +1,576 @@
+# -*- coding: utf-8 -*-
+# IK tools
+# 2021 04 08
+# 2021 05 10 fix
+# 2021 12 03 fix
+
+import maya.cmds as cmds
+import maya.mel as mel
+from functools import partial
+import sys, os
+
+class IK_localBlendTool():
+    
+    def __init__(self):
+        
+        self.win = "IK_localBlend"
+        self.IKwhite=[.95,.95,.95]
+        self.IKblack=[0,0,0]
+        self.IKgray=[.24,.24,.24]
+        self.mikuGr=[.6,.8,.8]
+        self.IKpink=[1,.8,.8]
+        self.IKblue=[.6,.79,.93]
+        self.sysWhite=[1, 1, 1]
+
+    ##############################
+    #         UI setting         #
+    ##############################
+
+    def ik_ui(self):
+        
+            
+        if cmds.window (self.win, exists=1)==True :
+                cmds.deleteUI(self.win)
+        
+        cmds.window(self.win, bgc=self.IKblue, w=200, h=100)
+        
+        cmds.rowColumnLayout(adj=1)
+        cmds.text(l="", h=5)
+        cmds.text(label="[  set local blend  ]", h=20)
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 70), (2, 180), (3, 10)])
+        cmds.text(l="")
+        cmds.radioButtonGrp("rigCache", labelArray2=['rig', 'cache'], numberOfRadioButtons=2 )
+        cmds.text(l="")
+        cmds.setParent("..")
+        
+        cmds.rowColumnLayout(nc=7, cw=[(1, 10), (2, 50), (3, 5), (4, 155), (5, 30), (6, 60), (7, 10)])
+        cmds.text(l="")
+        
+        cmds.rowColumnLayout(nr=3, rh=[(1, 25), (2, 25), (3, 25)])
+        cmds.text(l="local ctrl")
+        cmds.text(l="world ctrl")
+        cmds.text(l="alembic")
+        cmds.setParent("..")
+        
+        cmds.rowColumnLayout(nr=3, rh=[(1, 25), (2, 25), (3, 25)])
+        cmds.text(l="", h=10)
+        cmds.text(l="")
+        cmds.text(l="")
+        cmds.setParent("..")
+
+        cmds.rowColumnLayout(nr=3, rh=[(1, 25), (2, 25), (3, 25)])
+        cmds.textField("local", ed=0, bgc=self.sysWhite, w=150)
+        cmds.textField("world", ed=0, bgc=self.sysWhite)
+        cmds.textField("alembic", ed=0, bgc=self.IKwhite, pht="only for use cache")
+        cmds.setParent("..")
+        
+        cmds.rowColumnLayout(nr=3, rh=[(1, 25), (2, 25), (3, 25)])
+        cmds.button(l="<<", bgc=self.mikuGr, w=25, c=self.localInit)
+        cmds.button(l="<<", bgc=self.mikuGr, w=25, c=self.worldInit)
+        cmds.button(l="<<", bgc=self.mikuGr, w=25, c=self.cacheInit)
+        cmds.setParent("..")
+        
+        cmds.rowColumnLayout(nr=1, rh=[(1, 75)])
+        bake_bt=cmds.button(l="bake", bgc=self.IKgray, w=60, c=self.bake)
+        cmds.setParent("..")
+        
+        cmds.rowColumnLayout(nr=3, rh=[(1, 28), (2, 28), (3, 28)])
+        cmds.text(l="")
+        cmds.text(l="")
+        cmds.text(l="")
+        cmds.setParent("..")
+        
+        cmds.setParent("..")
+    
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 10), (2, 300), (3, 10)])
+        cmds.text(l="")
+        cmds.text(l="Local blend Control ▼", bgc=self.IKwhite, h=20)
+        #cmds.text(l="")
+        cmds.setParent('..')
+        
+        cmds.columnLayout("controlUI", adj=1)
+        cmds.text(l="", h=5)
+        cmds.rowColumnLayout(nc=7, cw=[(1, 6), (2, 65), (3, 45), (4, 10), (5, 83), (6, 10), (7,90)])
+        cmds.text(l="")
+        cmds.text(l="local blend")
+        cmds.floatField("blend", min=0, max=1, cc=partial(self.localBlendControl))
+        cmds.separator(hr=0)
+        cmds.checkBox("switch", l="worldSwitch", cc=self.worldLocalSwithch)
+        cmds.separator(hr=0)
+        del_bt=cmds.button(l="remove LocGrp", bgc=self.IKgray, c=self.delLocGrp)
+        cmds.setParent('..')
+        
+        cmds.text(l="", h=5)
+
+        ###### window end ######
+
+        cmds.showWindow(self.win)
+        
+    ##############################
+    #         def setting        #
+    ##############################     
+    
+    def localInit(self, *args):
+        lc=cmds.ls(sl=1)
+        
+        if lc==[]:
+            cmds.error("nothing selected")
+        elif len(lc)>1:
+            cmds.error("you should select only one controller")
+        else:
+            cmds.textField("local", e=1, tx=lc[0])
+            
+        
+        self.lc=lc
+
+    def worldInit(self, *args):
+        wc=cmds.ls(sl=1)
+
+        if wc==[]:
+            cmds.error("nothing selected")
+        elif len(wc)>1:
+            cmds.error("you should select only one controller")
+        else:
+            cmds.textField("world", e=1, tx=wc[0])
+        
+        self.wc=wc
+    
+    def cacheInit(self, *args):
+        cc=cmds.ls(sl=1)
+        
+        if cc==[]:
+            cmds.error("nothing selected")
+        elif len(cc)>1:
+            cmds.error("you should select only one controller")
+        else:
+            cmds.textField("alembic", e=1, tx=cc[0])
+            
+        
+    def bake(self, *args):
+        rc=cmds.radioButtonGrp("rigCache", q=1, sl=1)
+        
+        if rc==1:
+            
+            lg=cmds.ls("loc_Grp")
+            
+            if lg==[]:     
+                ###locator 생성###
+                
+                locName=["Bake", "Origin", "per", "rev", "worldBake"]
+                
+                cmds.spaceLocator(name="tmpLoc1")
+                cmds.duplicate()
+                cmds.duplicate()
+                cmds.duplicate()
+                cmds.duplicate()
+                
+                loc=(cmds.ls("tmpLoc?"))
+                
+                for i in range(len(loc)):
+                    cmds.rename(loc[i], locName[i])
+                
+                cmds.select(locName[0:4])
+                localGrp=cmds.ls(sl=1)
+                cmds.group(name="loc_local")
+                cmds.select(locName[-1])
+                cmds.group(name="worldSpace")
+                cmds.select("loc_local", "worldSpace")
+                cmds.group(name="loc_Grp")
+                
+                cmds.select("loc_Grp")
+                cmds.setAttr("loc_Grp.useOutlinerColor", 1)
+                mel.eval('setAttr ("loc_Grp.outlinerColor") 0 0.802 1;')
+                
+                for i in locName:
+                    cmds.setAttr(i+".localScaleX", 50)
+                    cmds.setAttr(i+".localScaleY", 50)
+                    cmds.setAttr(i+".localScaleZ", 50)
+                
+                cmds.setAttr("loc_Grp.tx", lock=1, keyable=0, channelBox=0)
+                cmds.setAttr("loc_Grp.ty", lock=1, keyable=0, channelBox=0)
+                cmds.setAttr("loc_Grp.tz", lock=1, keyable=0, channelBox=0)
+                cmds.setAttr("loc_Grp.rx", lock=1, keyable=0, channelBox=0)
+                cmds.setAttr("loc_Grp.ry", lock=1, keyable=0, channelBox=0)
+                cmds.setAttr("loc_Grp.rz", lock=1, keyable=0, channelBox=0)
+                cmds.setAttr("loc_Grp.sx", lock=1, keyable=0, channelBox=0)
+                cmds.setAttr("loc_Grp.sy", lock=1, keyable=0, channelBox=0)
+                cmds.setAttr("loc_Grp.sz", lock=1, keyable=0, channelBox=0)
+                cmds.setAttr("loc_Grp.v", lock=1, keyable=0, channelBox=0)
+                
+                cmds.addAttr("loc_Grp", ln="localBlend", at="float", min=0, max=1, keyable=1)
+                
+                ###locator 위치 지정 및 key bake###
+                
+                stF=cmds.playbackOptions(min=1, q=1)
+                endF=cmds.playbackOptions(max=1, q=1)
+                solver=cmds.ls("qlSolver*", type="qlSolverShape")
+                
+                if solver==[]:
+                    solver=cmds.ls("hrSolver*", type="hrSolverShape")
+                
+                active=[]
+                for i in solver:
+                    active.append(cmds.getAttr(i+".active"))
+                    cmds.setAttr(i+".active", 0)
+                
+                cmds.parentConstraint(self.wc, "worldBake", mo=0, name="world_tmp")
+                for i in localGrp:
+                    cmds.parentConstraint(self.lc, i, name="local_tmp")
+                
+                cmds.delete(cmds.ls("*tmp*", type="parentConstraint"))
+                
+                cmds.select(localGrp)
+                mel.eval("makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1;")
+                
+                cmds.pointConstraint(self.wc, "worldBake", mo=0, name="world_tmp")
+                cmds.pointConstraint(self.lc, "Bake", mo=0, name="local_tmp")
+                
+                cmds.bakeResults("Bake", "worldBake", simulation=1, t=(stF, endF), oversamplingRate=1, disableImplicitControl=1, preserveOutsideKeys=1, sparseAnimCurveBake=0, removeBakedAttributeFromLayer=0, removeBakedAnimFromLayer=0, bakeOnOverrideLayer=0, minimizeRotation=1, controlPoints=0, shape=1)
+                
+                cmds.delete(cmds.ls("*tmp*", type="pointConstraint"))
+                
+                cmds.cutKey(self.wc, cl=1, at=("tx", "ty", "tz"))
+                
+                cmds.currentTime(stF)
+                
+                qlOutGrp=["out"]
+                qlFinGrp=["final"]
+                
+                cmds.parentConstraint("per", qlOutGrp, mo=1, name="qlClothOutGrp_parentConstraint")
+                cmds.parentConstraint("per", qlFinGrp, mo=1, name="qlClothFinalGrp_parentConstraint")
+                cmds.setAttr("qlClothOutGrp_parentConstraint.perW0", 0)
+                cmds.pointConstraint("worldBake", self.wc, mo=1, name="world_pointConstraint")
+                cmds.pointConstraint("rev", "worldSpace", mo=1)
+                
+                for i in range(len(solver)):
+                    cmds.setAttr(solver[i]+".active", active[i])
+                    
+                ###Node connect###
+                
+                dist=cmds.shadingNode("plusMinusAverage", name="worldDistance", asUtility=1)
+                mPer=cmds.shadingNode("multiplyDivide", name="distanceCalcutalor", asUtility=1)
+                rPer=cmds.shadingNode("multiplyDivide", name="revDistanceCalculator", asUtility=1)
+                cmds.setAttr(dist+".operation", 2)
+                
+                cmds.connectAttr("Bake.translate", dist+".input3D[0]")
+                cmds.connectAttr("Origin.translate", dist+".input3D[1]")
+                
+                cmds.connectAttr(dist+".output3D", mPer+".input1")
+                cmds.setAttr(rPer+".input2X", -1)
+                cmds.setAttr(rPer+".input2Y", -1)
+                cmds.setAttr(rPer+".input2Z", -1)
+                cmds.connectAttr(mPer+".output", rPer+".input1")
+                
+                cmds.connectAttr(mPer+".output", "per.translate")
+                cmds.connectAttr(rPer+".output", "rev.translate")
+                
+                ###attribute connect###
+                
+                cmds.connectAttr("loc_Grp.localBlend", mPer+".input2X")
+                cmds.connectAttr("loc_Grp.localBlend", mPer+".input2Y")
+                cmds.connectAttr("loc_Grp.localBlend", mPer+".input2Z")
+                
+                sys.stdout.write("local setting complete")
+            else:
+                cmds.error("loc_Grp is already here")
+            
+        elif rc==2:
+            
+            cache=cmds.textField("alembic", q=1, text=1)
+            
+            if cache=="":
+                cmds.error("select alembic cache group")
+            
+            else:
+                lg=cmds.ls("loc_Grp")
+                
+                if lg==[]:     
+                    ###locator 생성###
+                    
+                    locName=["Bake", "Origin", "per", "rev", "worldBake"]
+                    
+                    cmds.spaceLocator()
+                    cmds.duplicate()
+                    cmds.duplicate()
+                    cmds.duplicate()
+                    cmds.duplicate()
+                    
+                    loc=(cmds.ls("locator?"))
+                    
+                    for i in range(len(loc)):
+                        cmds.rename(loc[i], locName[i])
+                    
+                    cmds.select(locName[0:4])
+                    localGrp=cmds.ls(sl=1)
+                    cmds.group(name="loc_local")
+                    cmds.select(locName[-1])
+                    cmds.group(name="worldSpace")
+                    cmds.select("loc_local", "worldSpace")
+                    cmds.group(name="loc_Grp")
+                    
+                    cmds.select("loc_Grp")
+                    cmds.setAttr("loc_Grp.useOutlinerColor", 1)
+                    mel.eval('setAttr ("loc_Grp.outlinerColor") 0 0.802 1;')
+                    
+                    for i in locName:
+                        cmds.setAttr(i+".localScaleX", 50)
+                        cmds.setAttr(i+".localScaleY", 50)
+                        cmds.setAttr(i+".localScaleZ", 50)
+                    
+                    cmds.setAttr("loc_Grp.tx", lock=1, keyable=0, channelBox=0)
+                    cmds.setAttr("loc_Grp.ty", lock=1, keyable=0, channelBox=0)
+                    cmds.setAttr("loc_Grp.tz", lock=1, keyable=0, channelBox=0)
+                    cmds.setAttr("loc_Grp.rx", lock=1, keyable=0, channelBox=0)
+                    cmds.setAttr("loc_Grp.ry", lock=1, keyable=0, channelBox=0)
+                    cmds.setAttr("loc_Grp.rz", lock=1, keyable=0, channelBox=0)
+                    cmds.setAttr("loc_Grp.sx", lock=1, keyable=0, channelBox=0)
+                    cmds.setAttr("loc_Grp.sy", lock=1, keyable=0, channelBox=0)
+                    cmds.setAttr("loc_Grp.sz", lock=1, keyable=0, channelBox=0)
+                    cmds.setAttr("loc_Grp.v", lock=1, keyable=0, channelBox=0)
+                    
+                    cmds.addAttr("loc_Grp", ln="localBlend", at="float", min=0, max=1, keyable=1)
+                    
+                    ###locator 위치 지정 및 key bake###
+                    
+                    stF=cmds.playbackOptions(min=1, q=1)
+                    endF=cmds.playbackOptions(max=1, q=1)
+                    solver=cmds.ls("qlSolver*", type="qlSolverShape")
+
+                    if solver==[]:
+                        solver=cmds.ls("hrSolver*", type="hrSolverShape")
+                    active=[]
+                    for i in solver:
+                        active.append(cmds.getAttr(i+".active"))
+                        cmds.setAttr(i+".active", 0)
+                    
+                    cmds.parentConstraint(self.wc, "worldBake", mo=0, name="world_tmp")
+                    for i in localGrp:
+                        cmds.parentConstraint(self.lc, i, name="local_tmp")
+                    
+                    cmds.delete(cmds.ls("*tmp*", type="parentConstraint"))
+                    
+                    cmds.select(localGrp)
+                    mel.eval("makeIdentity -apply true -t 1 -r 1 -s 1 -n 0 -pn 1;")
+                    
+                    cmds.pointConstraint(self.wc, "worldBake", mo=0, name="world_tmp")
+                    cmds.pointConstraint(self.lc, "Bake", mo=0, name="local_tmp")
+                    
+                    cmds.bakeResults("Bake", "worldBake", simulation=1, t=(stF, endF), oversamplingRate=1, disableImplicitControl=1, preserveOutsideKeys=1, sparseAnimCurveBake=0, removeBakedAttributeFromLayer=0, removeBakedAnimFromLayer=0, bakeOnOverrideLayer=0, minimizeRotation=1, controlPoints=0, shape=1)
+                    
+                    cmds.delete(cmds.ls("*tmp*", type="pointConstraint"))
+                    
+                    cmds.cutKey(self.wc, cl=1, at=("tx", "ty", "tz"))
+                    
+                    cmds.currentTime(stF)
+                    
+                    qlOutGrp=["out"]
+                    qlFinGrp=["final"]
+                    hrOutGrp=["hr_sim"]
+                    
+                    #cmds.parent(qlOutGrp, "rev")
+                    try:
+                        cmds.parentConstraint("per", qlOutGrp, mo=1, name="qlClothOutGrp_parentConstraint")
+                        cmds.parentConstraint("per", qlFinGrp, mo=1, name="qlClothFinalGrp_parentConstraint")
+                        cmds.setAttr("qlClothOutGrp_parentConstraint.perW0", 0)
+                    except:
+                        cmds.parentConstraint("per", hrOutGrp, mo=1, name="hrOutGrp_parentConstraint")
+                        cmds.setAttr("hrOutGrp_parentConstraint.perW0", 0)
+                    
+                    cmds.pointConstraint("worldBake", self.wc, mo=1, name="world_pointConstraint")
+                    cmds.pointConstraint("rev", "worldSpace", mo=1)
+                    
+                    for i in range(len(solver)):
+                        cmds.setAttr(solver[i]+".active", active[i])
+                        
+                    ###Node connect###
+                    
+                    dist=cmds.shadingNode("plusMinusAverage", name="worldDistance", asUtility=1)
+                    mPer=cmds.shadingNode("multiplyDivide", name="distanceCalcutalor", asUtility=1)
+                    rPer=cmds.shadingNode("multiplyDivide", name="revDistanceCalculator", asUtility=1)
+                    cmds.setAttr(dist+".operation", 2)
+                    
+                    cmds.connectAttr("Bake.translate", dist+".input3D[0]")
+                    cmds.connectAttr("Origin.translate", dist+".input3D[1]")
+                    
+                    cmds.connectAttr(dist+".output3D", mPer+".input1")
+                    cmds.setAttr(rPer+".input2X", -1)
+                    cmds.setAttr(rPer+".input2Y", -1)
+                    cmds.setAttr(rPer+".input2Z", -1)
+                    cmds.connectAttr(mPer+".output", rPer+".input1")
+                    
+                    cmds.connectAttr(mPer+".output", "per.translate")
+                    cmds.connectAttr(rPer+".output", "rev.translate")
+                    
+                    ###attribute connect###
+                    
+                    cmds.connectAttr("loc_Grp.localBlend", mPer+".input2X")
+                    cmds.connectAttr("loc_Grp.localBlend", mPer+".input2Y")
+                    cmds.connectAttr("loc_Grp.localBlend", mPer+".input2Z")
+                    
+                    try:
+                        cmds.pointConstraint("rev", cache, mo=1, name="cache_pointConstraint")
+                    except:
+                        cmds.setAttr(cache+".rx", lock=0)
+                        cmds.setAttr(cache+".ry", lock=0)
+                        cmds.setAttr(cache+".rz", lock=0)
+                        cmds.setAttr(cache+".tx", lock=0)
+                        cmds.setAttr(cache+".ty", lock=0)
+                        cmds.setAttr(cache+".tz", lock=0)
+                        cmds.setAttr(cache+".sx", lock=0)
+                        cmds.setAttr(cache+".sy", lock=0)
+                        cmds.setAttr(cache+".sz", lock=0)
+                        cmds.pointConstraint("rev", cache, mo=1, name="cache_pointConstraint")
+                    
+                    sys.stdout.write("local setting complete")
+                else:
+                    cmds.error("loc_Grp is already here")
+                
+        #self.lg=lg
+        else:
+            cmds.error("select rig or cache")
+
+    def localBlendControl(self, *args):
+        v=cmds.floatField("blend", v=1, q=1)
+        cmds.setAttr("loc_Grp.localBlend", v)
+        
+    def worldLocalSwithch(self, *args):
+        rc=cmds.radioButtonGrp("rigCache", q=1, sl=1)
+        if rc==1:            
+            sv=cmds.checkBox("switch", q=1, v=1)
+            #print sv
+            if sv==True:
+                cmds.setAttr("qlClothOutGrp_parentConstraint.perW0", 1)
+                cmds.setAttr("worldSpace_pointConstraint1.revW0", 0)
+            elif sv==False:
+                cmds.setAttr("qlClothOutGrp_parentConstraint.perW0", 0)
+                cmds.setAttr("worldSpace_pointConstraint1.revW0", 1)
+        elif rc==2:
+            sv=cmds.checkBox("switch", q=1, v=1)
+
+            if sv==True:
+                try:
+                    cmds.setAttr("qlClothOutGrp_parentConstraint.perW0", 1)
+                except:
+                    cmds.setAttr("hrOutGrp_parentConstraint.perW0", 1)
+                cmds.setAttr("worldSpace_pointConstraint1.revW0", 0) 
+                cmds.setAttr("cache_pointConstraint.revW0", 0)           
+            elif sv==False:
+                try:
+                    cmds.setAttr("qlClothOutGrp_parentConstraint.perW0", 0)
+                except:
+                    cmds.setAttr("hrOutGrp_parentConstraint.perW0", 0)
+                cmds.setAttr("worldSpace_pointConstraint1.revW0", 1)  
+                cmds.setAttr("cache_pointConstraint.revW0", 1)  
+    def delLocGrp(self, *args):
+        
+        rc=cmds.radioButtonGrp("rigCache", q=1, sl=1)
+        
+        lg=cmds.ls("loc_Grp")
+        
+        stF=cmds.playbackOptions(min=1, q=1)
+        endF=cmds.playbackOptions(max=1, q=1)
+        solver=cmds.ls("qlSolver*", type="qlSolverShape")
+
+        if solver==[]:
+            solver=cmds.ls("hrSolver*", type="hrSolverShape")
+        
+        active=[]
+        
+        if rc==1:
+            if lg==["loc_Grp"]:
+                cd=cmds.confirmDialog(title="confirm", message="Are you sure?", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+
+                if cd=="Yes":
+                    for i in solver:
+                        active.append(cmds.getAttr(i+".active"))
+                        cmds.setAttr(i+".active", 0)
+                    
+                    cmds.setAttr("loc_Grp.localBlend", 0)
+                    
+                    cmds.select("world_pointConstraint")
+                    cmds.pickWalk(d="up")
+                    wc=cmds.ls(sl=1)
+                    
+                    cmds.bakeResults(wc, simulation=1, t=(stF, endF), oversamplingRate=1, disableImplicitControl=1, preserveOutsideKeys=1, sparseAnimCurveBake=0, removeBakedAttributeFromLayer=0, removeBakedAnimFromLayer=0, bakeOnOverrideLayer=0, minimizeRotation=1, controlPoints=0, shape=1)
+                    
+                    cmds.currentTime(stF)
+                    
+                    conExist=cmds.objExists("qlClothOutGrp_parentConstraint")
+                    if conExist==True:
+                        cmds.delete("qlClothOutGrp_parentConstraint")
+                        cmds.delete("qlClothFinalGrp_parentConstraint")
+                    else:
+                        
+                        try:
+                            cmds.delete("hrOutGrp_parentConstraint")
+                        except:
+                            cmds.error("no object exists")
+                            pass
+                    cmds.delete("world_pointConstraint")
+                    cmds.delete("loc_Grp")
+                    
+                    for i in range(len(solver)):
+                        cmds.setAttr(solver[i]+".active", active[i])
+                
+                    sys.stdout.write("loc_Grp left for freedom. Goodbye, loc_Grp!")
+                else:
+                    pass
+            
+            else:
+                cmds.error("loc_Grp doesn't exists")
+        elif rc==2:
+            if lg==["loc_Grp"]:
+                cd=cmds.confirmDialog(title="confirm", message="Are you sure?", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+                #print cd
+                if cd=="Yes":
+                    for i in solver:
+                        active.append(cmds.getAttr(i+".active"))
+                        cmds.setAttr(i+".active", 0)
+                    
+                    cmds.setAttr("loc_Grp.localBlend", 0)
+                    
+                    cmds.select("world_pointConstraint")
+                    cmds.pickWalk(d="up")
+                    wc=cmds.ls(sl=1)
+                    
+                    cmds.bakeResults(wc, simulation=1, t=(stF, endF), oversamplingRate=1, disableImplicitControl=1, preserveOutsideKeys=1, sparseAnimCurveBake=0, removeBakedAttributeFromLayer=0, removeBakedAnimFromLayer=0, bakeOnOverrideLayer=0, minimizeRotation=1, controlPoints=0, shape=1)
+                    
+                    cmds.currentTime(stF)
+                    
+                    conExist=cmds.objExists("qlClothOutGrp_parentConstraint")
+                    if conExist==True:
+                        cmds.delete("qlClothOutGrp_parentConstraint")
+                        cmds.delete("qlClothFinalGrp_parentConstraint")
+                    else:
+                        
+                        try:
+                            cmds.delete("hrOutGrp_parentConstraint")
+                        except:
+                            cmds.error("no object exists")
+                            pass
+
+                    cmds.delete("world_pointConstraint")
+                    cmds.delete("loc_Grp")
+                    
+                    for i in range(len(solver)):
+                        cmds.setAttr(solver[i]+".active", active[i])
+                
+                    sys.stdout.write("loc_Grp left for freedom. Goodbye, loc_Grp!")
+                else:
+                    pass
+            
+            else:
+                cmds.error("loc_Grp doesn't exists")
+        
+        else:
+            cmds.error("select rig or cache")
+            
+
+def run_localBlend():
+    run=IK_localBlendTool()
+    run.ik_ui()
+
+run_localBlend()
