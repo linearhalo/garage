@@ -1,0 +1,2878 @@
+# -*- coding: utf-8 -*-
+# IK tools
+# 21/ 02/ 02
+# fix 21/ 04/ 29
+# fix 21/ 07/ 09
+# fix 21/ 11/ 04
+
+import maya.cmds as cmds
+import maya.mel as mel
+import os,sys
+import setDescriptionCache
+
+class IK_simSettingTool():
+    swCol1 = 1.0, 0.0, 0.0 # Swatch color red
+    swCol2 = 0.0, 1.0, 0.0 # Swatch color green
+    swCol3 = 0.0, 0.0, 1.0 # Swatch color blue
+    swCol4 = 0.0, 1.0, 1.0 # Swatch color cyan
+    swCol5 = 1.0, 0.0, 1.0 # Swatch color magenta
+    swCol6 = 1.0, 1.0, 0.0 # Swatch color yellow
+    swCol7 = 0.0, 0.5, 1.0 # Swatch color azure
+    swCol8 = 0.5, 1.0, 0.0 # Swatch color chartreuse
+    swCol9 = 1.0, 0.5, 0.0 # Swatch color orange
+    swCol10 = 1.0, 0.0, 0.5 # Swatch color rose
+    swCol11 = 0.0, 1.0, 0.5 # Swatch color spring green
+    swCol12 = 0.5, 0.0, 1.0 # Swatch color violet
+    swCol13 = 0.5, 0.5, 0.0 # Swatch color olive
+    swCol14 = 0.5, 0.0, 0.5 # Swatch color purple
+    swCol15 = 0.0, 0.5, 0.5 # Swatch color teal
+    swCol16 = 1.0, 1.0, 1.0 # Swatch color white
+    
+    def __init__(self):
+        self.win="IK_simSettingTool"
+           
+        self.IKwhite=[.9,.9,.9]
+        self.IKblack=[0,0,0]
+        self.IKgray=[.24,.24,.24]
+        self.mikuGr=[.6,.8,.8]
+        self.IKpink=[1,.8,.8]
+        self.IKblue=[.6,.79,.93]
+        self.IKyellow=[.956, .956, .6]
+        self.IKgr=[.485, .762, .629]
+        self.IKorange=[1, .7, .519]
+        self.tmp=[]
+
+    ##############################
+    #         UI setting         #
+    ##############################
+      
+    def ik_ui(self):
+            
+        if cmds.window (self.win, exists=1)==True :
+                cmds.deleteUI(self.win)
+        
+        cmds.window(self.win, bgc=self.IKgray, h=100, w=100 )
+        
+        form=cmds.formLayout(backgroundColor=self.IKgray)
+        tabs = cmds.tabLayout(innerMarginWidth=2, innerMarginHeight=2,scrollable=0)
+        cmds.formLayout( form, edit=True, attachForm=((tabs, 'top', 0), (tabs, 'left', 0), (tabs, 'bottom', 0), (tabs, 'right', 0)) )
+
+        #tap1
+        #qualoth/collider setting    
+
+        child1=cmds.columnLayout("CLOTH",adj=1,vis=1)
+        
+        cmds.rowColumnLayout()
+        cmds.text( l=' ',h=5)
+        cmds.setParent('..')
+        
+        ############controller, proxy, ql/cl setting############
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text( l="--------------ClothSet--------------")
+        cmds.text(l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text( l='',h=5)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=2, cw = [(1,20) , (2,156)])
+        cmds.text( l="")
+        cmds.button(label=1, l="make group", bgc=self.IKblue, c=self.IK_makeGroupTree)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=5, cw = [(1,20) , (2,76), (3,4),(4,76), (5,20)])
+        cmds.text( l="")
+        cmds.button(label=1, l="proxy", bgc=self.IKblue, c=self.IK_qlProxy)
+        cmds.text( l="")
+        cmds.button(label=1, l="setting", bgc=self.IKblue, c=self.IK_qlSetting)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=5, cw = [(1,20) , (2,76), (3,4),(4,76), (5,20)])
+        cmds.text( l="")
+        cmds.button(label=1, l="collider", bgc=self.IKblue, c=self.IK_colliderSetting)
+        cmds.text( l="")
+        cmds.button(label=1, l="individual", bgc=self.mikuGr, c=self.IK_qlSettingIndi)
+        cmds.setParent('..')
+
+        ############wrap############
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="wrap ▼", bgc=self.IKgray, c=self.ui_wrap)
+        cmds.setParent('..')
+        
+        cmds.columnLayout("wrapUI", adj=1, vis=0) 
+        cmds.rowColumnLayout(nc=3, cw = [(1,20) , (2,155), (3,25)])
+        cmds.text(l="")
+        self.w_obj= cmds.textScrollList("wrapList", nr=5, bgc=self.IKwhite, selectCommand=self.selectWrapList)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=6, cw = [(1,20) , (2,48), (3,5), (4,50), (5, 5), (6, 48)])
+        cmds.text(label="")
+        cmds.button(label="Add", bgc=self.mikuGr, c=self.setWrapList)
+        cmds.text(label="")
+        cmds.button(label="Remove", bgc=self.mikuGr, c=self.removeObjList_wrap)
+        cmds.text(label="")
+        cmds.button(label="Clear", bgc=self.mikuGr, c=self.clearObjList_wrap)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 131), (3, 25)])
+        cmds.text(label="")
+        self.w_mesh=cmds.textField("currentMesh", ed=0,h=30 , ip = 0 ,pht='set wrap mesh', bgc =self.IKwhite)
+        cmds.button(l="<<", bgc=self.mikuGr, c=self.setSimulMesh)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=2, cw = [(1,20) , (2,156)])
+        cmds.text( l="")
+        cmds.button(label=1, l="create wrap", bgc=self.mikuGr, c=self.createWrap)
+        cmds.setParent('..')
+        
+        cmds.setParent('..')
+        
+        cmds.text( l="", h=5)
+        
+        cmds.rowColumnLayout(nc=3, cw = [(1,19) , (2,156), (3,5)])
+        cmds.text( l="", h=10)
+        cmds.separator(h=5, style="in")
+        cmds.text( l="")
+        cmds.setParent('..')           
+
+        ############constraint############
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text( l="-------------Constraint-------------")
+        cmds.text(l="")
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout()
+        cmds.text( l='',h=5)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=4, cw = [(1,20) , (2,75), (3,5), (4,75)])
+        cmds.text( l="")
+        cmds.button(label=1, l="Attach", bgc=self.IKblue, c=self.attachConst)
+        cmds.text( l="")
+        cmds.button(label=1, l="Spring", bgc=self.IKblue, c=self.createSpring)
+        
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=4, cw = [(1,20) , (2,75), (3,5), (4,75)])
+        cmds.text( l="")
+        cmds.button(label=1, l="AttachSpring", bgc=self.IKblue, c=self.attachSpring)
+        cmds.text( l="")
+        cmds.button(label=1, l="Goal", bgc=self.IKblue, c=self.goalConst)
+        cmds.text( l="", h=5)
+
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=2, cw = [(1,20) , (2,155)])
+        cmds.text( l="")
+        cmds.button(l="paint attributes ▶", pma=1, bgc=self.mikuGr)
+        
+        cmds.popupMenu(button=1)
+        cmds.menuItem(subMenu=1, to=1, l="cloth attributes")
+        cmds.menuItem(l="Length Scale Map", c=self.LSM)
+        cmds.menuItem(l="Density Map", c=self.DM)
+        cmds.menuItem(l="Friction Map", c=self.FRM)
+        cmds.menuItem(l="Stretch Map", c=self.STM)
+        cmds.menuItem(l="Compression Map", c=self.CPM)
+        cmds.menuItem(l="Shear Map", c=self.SM)
+        cmds.menuItem(l="Stretch Damp Map", c=self.SDM)
+        cmds.menuItem(l="Bend Map", c=self.BM)
+        cmds.menuItem(l="Bend Damp Map", c=self.BDM)
+        cmds.menuItem(l="Plasticity Map", c=self.PM)
+        cmds.menuItem(l="Pressure Map", c=self.PSM)
+        cmds.menuItem(l="Viscous Damp Map", c=self.VDM)
+        cmds.menuItem(l="Rubber Map", c=self.RM)
+        cmds.menuItem(l="Weft(U) Rubber Map", c=self.URM)
+        cmds.menuItem(l="Warp(V) Rubber Map", c=self.VRM)
+        cmds.menuItem(l="Air Drag Map", c=self.ADM)
+        cmds.menuItem(l="Field Map", c=self.FM)
+        cmds.menuItem(l="Soft Constraint Map", c=self.SCM)
+        cmds.menuItem(l="Proximity Criterion Map", c=self.PCM)
+        cmds.menuItem(l="Thickness Map", c=self.TM)
+        cmds.menuItem(l="Self Collision Map", c=self.CM)
+        cmds.menuItem(l="Solid Collision Map", c=self.CMS)
+        cmds.menuItem(l="Gravity Map", c=self.GM)
+        cmds.menuItem(l="Preserve Wrinkle Map", c=self.PWM)
+        
+        cmds.popupMenu(button=3)
+        cmds.menuItem(subMenu=1, to=1, l="collider Attributes")
+        cmds.menuItem(l="Offset Map", c=self.OM)
+        cmds.menuItem(l="Friction Map", c=self.FRM)
+        cmds.menuItem(l="Collision Map", c=self.CSM)
+        cmds.menuItem(l="Priority Map", c=self.PRM)
+        
+        cmds.popupMenu(button=2)
+        cmds.menuItem(subMenu=1, to=1, l="Goal Constraint Attributes")
+        cmds.menuItem(l="Strength Map", c=self.STM)
+        cmds.menuItem(l="Damping Map", c=self.DPM)
+        cmds.menuItem(l="Force Limit Map", c=self.FLM)
+        
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw = [(1,19) , (2,156), (3,5)])
+        cmds.text( l="", h=10)
+        cmds.separator(h=5, style="in")
+        cmds.text(label="")
+        cmds.setParent('..')
+        
+        ############fields############
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(label="----------------Fields----------------")
+        cmds.text(l="")
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout()
+        cmds.text( l='',h=5)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="create VolumeAxisField", bgc=self.IKblue, c=self.createField)
+        cmds.setParent('..')
+        
+        cmds.text(l="", h=5)
+        
+        cmds.rowColumnLayout(nc=6, cw = [(1,20) , (2,60), (3,20), (4, 5), (5,71), (6,20)])
+        cmds.text(label="")
+        cmds.textField("currentField", ed=0,h=30 , ip = 0 ,pht='Field', bgc =self.IKwhite)
+        cmds.button(l="<<", bgc=self.IKblue, c=self.IK_initField)
+        cmds.text(label="")
+        cmds.button(l="connectField", bgc=self.IKpink, c=self.IK_connectField)
+        cmds.setParent('..')
+        
+        
+        cmds.rowColumnLayout(nc=3,cat=[(1, "both", 0), (2, "both", 0), (3, "both", 0)], cw=[(1,10),(2,165),(4,8)])
+        cmds.text(l="")
+        cmds.text(al="right", l="IK simulSettingTool", h=30)
+        cmds.text(l="")
+        cmds.setParent("..")
+        
+        cmds.setParent("..")
+
+        ########## hair tab #########
+        child5=cmds.columnLayout("HAIR",adj=1,vis=1)
+        
+        cmds.rowColumnLayout()
+        cmds.text( l=' ',h=5)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text( l="---------------HairSet---------------")
+        cmds.text(l="")
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="xgen hair setting ▼", bgc=self.IKgray, c=self.hr_xgenUI)
+        cmds.setParent('..')
+        #
+        cmds.columnLayout("xgen_hrSetUI", adj=1, vis=0)
+        ##
+
+        cmds.rowColumnLayout(nc=5, cw=[(1, 15), (2, 40), (3, 88), (4, 4), (5, 28)])
+        cmds.text(label="")
+        cmds.text(l="head")
+        cmds.textField("xgen_head", ip=0, ed=0, pht='init head', bgc =self.IKwhite)
+        cmds.text(label="")
+        cmds.button(l="<<", bgc=self.mikuGr, c=self.hr_xgenHeadInit)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=5, cw = [(1,20) , (2,75), (3,5),(4,75), (5,20)])
+        cmds.text( l="")
+        cmds.button(label=1, l="inputCv set", bgc=self.mikuGr, c=self.hr_setInputCv)
+        cmds.text( l="")
+        cmds.button(l="make group", bgc=self.mikuGr, c=self.hr_IK_makeGroupTree)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=2, cw = [(1,20) , (2,155)])
+        cmds.text( l="")
+        cmds.button(l="setting", bgc=self.IKblue, c=self.hr_hairSetting)
+        cmds.setParent('..') 
+        ##
+        cmds.setParent('..')#큰 컬럼레이아웃 닫음
+        #
+        cmds.text(l="", h=10)
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="yeti hair setting ▼", bgc=self.IKgray, c=self.hr_yetiUI)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text( l='',h=5)
+        cmds.setParent('..')
+        #
+        cmds.columnLayout("yeti_hrSetUI", adj=1, vis=0)
+        ##
+        cmds.rowColumnLayout(nc=5, cw=[(1, 15), (2, 40), (3, 88), (4, 4), (5, 28)])
+        cmds.text(label="")
+        cmds.text(l="head")
+        cmds.textField("yeti_head", ip=0, ed=0, pht='init head', bgc =self.IKwhite)
+        cmds.text(label="")
+        cmds.button(l="<<", bgc=self.mikuGr, c=self.hr_yetiHeadInit)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=5, cw=[(1, 15), (2, 40), (3, 88), (4, 4), (5, 28)])
+        cmds.text(label="")
+        cmds.text(l="cvGrp")
+        cmds.textField("yeti_cv", ip=0, ed=0, pht='init cvGrp', bgc =self.IKwhite)
+        cmds.text(label="")
+        cmds.button(l="<<", bgc=self.mikuGr, c=self.hr_yetiOriCvInit)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 155), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="make group", bgc=self.mikuGr, c=self.hr_IK_makeGroupTree)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 155), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="setting", bgc=self.IKblue, c=self.hr_yetiSetting)
+        cmds.setParent('..')
+        
+        cmds.setParent('..')#큰 컬럼레이아웃에서 분리
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text( l="--------constraint & connect--------")
+        cmds.text(l="")
+        cmds.setParent('..')
+        
+        cmds.text(l="", h=5)
+        
+        cmds.rowColumnLayout(nc=5, cw = [(1,20) , (2,75), (3,5),(4,75), (5,20)])
+        cmds.text( l="")
+        cmds.button(l="hrCollider", bgc=self.mikuGr, c=self.hrCollider)
+        cmds.text( l="")
+        cmds.button(l="Const", bgc=self.mikuGr, c=self.hrConstraint)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=5, cw = [(1,20) , (2,75), (3,5),(4,75), (5,20)])
+        cmds.text( l="")
+        cmds.button(l="Attach", bgc=self.mikuGr, c=self.hrAttach)
+        cmds.text( l="")
+        cmds.button(l="Spring", bgc=self.mikuGr, c=self.hrSpring)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text( l='',h=5)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 155), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="create VolumeAxisField", bgc=self.IKblue, c=self.hr_createField)
+        cmds.setParent('..')
+    
+        cmds.rowColumnLayout(nc=5, cw = [(1,20) , (2,75), (3,5),(4,75), (5,20)])
+        cmds.text( l="")
+        cmds.button(l="connect", bgc=self.mikuGr, c=self.hr_connectField)
+        cmds.text( l="")
+        cmds.button(l="disconnect", bgc=self.mikuGr, c=self.hr_disConnectField)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw = [(1,19) , (2,156), (3,5)])
+        cmds.text( l="", h=10)
+        cmds.separator(h=5, style="in")
+        cmds.text( l="")
+        cmds.setParent('..') 
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text( l="-------------alembic for xgen-------------")
+        cmds.text(l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text( l='',h=5)
+        cmds.setParent('..')
+
+        #cmds.text(l="", h=10)
+        cmds.rowColumnLayout(nc=4, cw=[(1, 20), (2, 128), (3, 4), (4, 23)])
+        cmds.text(label="")
+        cmds.textField("hr_exptGrp", ip=0, ed=0, pht='init hairGrp', bgc =self.IKwhite)
+        cmds.text(label="")
+        cmds.button(l="<<", bgc=self.mikuGr, c=self.hr_initHairGrp)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=2, cw = [(1,20) , (2,155)])
+        cmds.text( l="")
+        cmds.button(l="export hairCache for xgen", bgc=self.IKpink, c=self.hr_exportAlembic)
+        cmds.setParent('..')
+        
+        cmds.text(l="", h=5)
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="hairCache export option ▼", bgc=self.IKgray, c=self.hr_cacheUI)
+        cmds.setParent('..')
+        #
+        cmds.columnLayout("hrCacheUI", adj=1, vis=0)
+        ##
+        cmds.rowColumnLayout()
+        cmds.text( l='',h=5)
+        cmds.setParent('..')
+
+        cmds.columnLayout ( adj =1 )
+        cmds.rowLayout(numberOfColumns = 10,columnAttach=(1, 'both', 0))
+        cmds.text(label='', w= 20)
+        cmds.text(label='stF' )
+        cmds.textField("hr_stF", w=39, bgc=self.IKwhite)
+        cmds.text(label=' endF' )
+        cmds.textField("hr_endF", w=38, bgc=self.IKwhite)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout (nc=5) 
+        cmds.text(label='', w=20)
+        cmds.textField('hr_setPath', pht='alembic path', ip=0, ed=0, w=129, bgc=self.IKwhite)
+        cmds.text(l='',w=7)
+        cmds.iconTextButton(i='TTF_Refresh',st='iconOnly',h=10,w=20, c=lambda *args:self.hr_refreshCacheOption())
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=5, cw = [(1,20) , (2,75), (3,5),(4,75), (5,20)])
+        cmds.text( l="")
+        cmds.button(l="openDir", bgc=self.mikuGr, c=self.hr_openHairCachePath)
+        cmds.text( l="")
+        cmds.button(l="printPath", bgc=self.mikuGr, c=self.hr_printHairCachePath)
+        cmds.setParent('..')#제일 아래 로우컬럼레이아웃 닫음
+        ##
+        cmds.setParent('..')#큰 컬럼레이아웃 닫음
+        #
+        cmds.setParent('..')#큰 컬럼레이아웃에서 분리
+
+        cmds.text( l="", h=5)
+        
+        cmds.rowColumnLayout(nc=3, cw = [(1,19) , (2,156), (3,5)])
+        cmds.text( l="", h=10)
+        cmds.separator(h=5, style="in")
+        cmds.text( l="")
+        cmds.setParent('..')
+        
+        ############constraint############
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text( l="-------------set guideCache-------------")
+        cmds.text(l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text( l='',h=5)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=2, cw = [(1,20) , (2,155)])
+        cmds.text( l="")
+        cmds.button(l="set guideAnimation cache", bgc=self.IKblue, c=self.setGuideCache)
+        cmds.setParent('..')
+        
+        cmds.text(l="", h=10)
+        
+        cmds.setParent('..')
+        
+        ########## utility tab #########
+        child2=cmds.columnLayout("UTILITY", adj=1, vis=1)                
+        cmds.rowColumnLayout()
+        cmds.text(label=' ',h=5)
+        cmds.setParent('..')
+        
+        ############set Shader############
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(label="-------------setShader-------------")
+        cmds.text(l="")
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout()
+        cmds.text( l='',h=5)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=3, cw = [(1,20) , (2,155), (3,25)])
+        cmds.text(l="")
+        self.c_obj= cmds.textScrollList("selList", nr=5, bgc=self.IKwhite, selectCommand=self.selectColorList)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=6, cw = [(1,20) , (2,48), (3,5), (4,50), (5, 5), (6, 48)])
+        cmds.text(label="")
+        cmds.button(label="Add", bgc=self.IKblue, c=self.selObjList)
+        cmds.text(label="")
+        cmds.button(label="Remove", bgc=self.IKblue, c=self.removeObjList)
+        cmds.text(label="")
+        cmds.button(label="Clear", bgc=self.IKblue, c=self.clearObjList)
+        
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="auto set color", bgc=self.IKblue, c=self.autoColorAssign)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="color palette ▼", bgc=self.IKgray, c=self.colorPalette)
+        cmds.setParent('..')
+        
+        #dark
+        cmds.columnLayout("palette", adj=1, vis=0)   
+        cmds.rowLayout(nc=10,cat=[(1, 'both', 0), (2, 'both', 0), (3, 'both', 0), (4, 'both', 0),(5, 'both', 0),(6, 'both', 0),(7, 'both', 0),(8, 'both', 0),(9, 'both', 0),(10, 'both', 0)], cw=[(1,20),(2,17.5),(3,17.5),(4,17.5),(5,17.5),(6,17.5),(7,17.5),(8,17.5),(9,17.5),(10,8)])
+        cmds.text(l='')
+        cmds.button('D_red', l='',bgc=[.5,0,0],c=lambda x:self.setShader('D_red'))
+        cmds.button('D_orange', l='',bgc=[.8,.3,0],c=lambda x:self.setShader('D_orange'))
+        cmds.button('D_yellow', l='',bgc=[.75,.75,0],c=lambda x:self.setShader('D_yellow'))
+        cmds.button('D_green', l='',bgc=[0,.5,0],c=lambda x:self.setShader('D_green'))
+        cmds.button('D_blue', l='',bgc=[0,0,1],c=lambda x:self.setShader('D_blue'))
+        cmds.button('D_purple', l='',bgc=[.3,0,.6],c=lambda x:self.setShader('D_purple'))
+        cmds.button('D_pink', l='',bgc=[.65,.15,.6],c=lambda x:self.setShader('D_pink'))
+        cmds.button('D_gray', l='',bgc=[0,0,0],c=lambda x:self.setShader('D_gray'))
+        cmds.text(l='')
+        cmds.setParent('..')
+        
+        #default
+        cmds.rowLayout(nc=10,cat=[(1, 'both', 0), (2, 'both', 0), (3, 'both', 0), (4, 'both', 0),(5, 'both', 0),(6, 'both', 0),(7, 'both', 0),(8, 'both', 0),(9, 'both', 0),(10, 'both', 0)], cw=[(1,20),(2,17.5),(3,17.5),(4,17.5),(5,17.5),(6,17.5),(7,17.5),(8,17.5),(9,17.5),(10,8)])
+        cmds.text(l='')
+        cmds.button('red', l='',bgc=[1,0,0] ,c=lambda x:self.setShader('red'))
+        cmds.button('orange', l='',bgc=[1,.5,0] ,c=lambda x:self.setShader('orange'))
+        cmds.button('yellow', l='',bgc=[1,.93,0] ,c=lambda x:self.setShader('yellow'))
+        cmds.button('green', l='',bgc=[0,1,0] ,c=lambda x:self.setShader('green'))
+        cmds.button('blue', l='',bgc=[0,.9,1] ,c=lambda x:self.setShader('blue'))
+        cmds.button('purple', l='',bgc=[.7,0.3,1] ,c=lambda x:self.setShader('purple'))
+        cmds.button('pink', l='',bgc=[1,.2,.95] ,c=lambda x:self.setShader('pink'))
+        cmds.button('gray', l='D',bgc=[.5,.5,.5] ,c=lambda x:self.setShader('gray'))
+        
+        cmds.text(l='')
+        cmds.setParent('..')
+        
+        #bright
+        cmds.rowLayout(nc=10,cat=[(1, 'both', 0), (2, 'both', 0), (3, 'both', 0), (4, 'both', 0),(5, 'both', 0),(6, 'both', 0),(7, 'both', 0),(8, 'both', 0),(9, 'both', 0),(10, 'both', 0)], cw=[(1,20),(2,17.5),(3,17.5),(4,17.5),(5,17.5),(6,17.5),(7,17.5),(8,17.5),(9,17.5),(10,8)])
+        cmds.text(l='')
+        cmds.button('B_red',l='',bgc=[1,.7,.7] ,c=lambda x:self.setShader('B_red'))
+        cmds.button('B_orange',l='',bgc=[1,.866,.706] ,c=lambda x:self.setShader('B_orange'))
+        cmds.button('B_yellow',l='',bgc=[1,.98,.6] ,c=lambda x:self.setShader('B_yellow'))
+        cmds.button('B_green',l='',bgc=[.7,1,.7] ,c=lambda x:self.setShader('B_green'))
+        cmds.button('B_blue',l='',bgc=[.7,1,1] ,c=lambda x:self.setShader('B_blue'))
+        cmds.button('B_purple',l='',bgc=[.9,.7,1] ,c=lambda x:self.setShader('B_purple'))
+        cmds.button('B_pink',l='',bgc=[1,.6,1] ,c=lambda x:self.setShader('B_pink'))
+        cmds.button('B_gray',l='',bgc=[1,1,1] ,c=lambda x:self.setShader('B_gray'))
+        cmds.text(l='')
+        cmds.setParent('..')
+        
+        cmds.text(label="", h=5)
+        cmds.setParent('..')
+ 
+        ############ playBlast ############
+            
+        cmds.rowColumnLayout(nc=3, cw = [(1,19) , (2,156), (3,5)])
+        cmds.text(label="", h=10)
+        cmds.separator(h=5, style="in")
+        cmds.text(label="")
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(label="---------------playBlast---------------")
+        cmds.text(l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=3, cw = [(1,23) , (2,146), (3,5)])
+        cmds.text(l='')
+        cmds.radioButtonGrp("vidType" ,nrb=2, labelArray2=('mov', 'avi') , sl=1, cw2=[90, 50])
+        cmds.setParent('..')
+                
+        cmds.columnLayout ( adj =1 )
+        cmds.rowLayout(numberOfColumns = 10,columnAttach=(1, 'both', 0))
+        cmds.text(label='', w= 20)
+        cmds.text(label='stF' )
+        self.startTxt = cmds.textField(w=39, bgc=self.IKwhite)
+        cmds.text(label=' endF' )
+        self.endTxt = cmds.textField(w=38, bgc=self.IKwhite)
+        cmds.setParent('..')     
+       
+        cmds.rowColumnLayout (nc=5) 
+        cmds.text(label='', w=20)
+        cmds.textField('setPath',tx='set path',en=1,w=130, bgc=self.IKwhite)
+        cmds.text(l='',w=5)
+        cmds.iconTextButton(i='TTF_Refresh',st='iconOnly',h=10,w=20, c=lambda *args:self.refresh())
+        
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=5, cw = [(1,20) , (2,75), (3,5),(4,75), (5,20)])
+        cmds.text(label="", h=20)
+        runBt=cmds.button(label="blast", bgc=self.IKblue, c=self.runPlayblast)
+        cmds.text(label="")
+        cmds.button(label="openDir", bgc=self.IKblue, c=self.openPlayblastDir)
+        cmds.setParent('..')  
+        
+        cmds.setParent('..')
+        
+        cmds.text(l="", h=5)
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(label="---------------blendShape---------------")
+        cmds.text(l="")
+        cmds.setParent('..')
+        
+        cmds.text(l="", h=5)
+        
+        cmds.rowColumnLayout(nc=4, cw=[(1, 20), (2, 110), (3, 3), (4, 43)])
+        cmds.text(label="")
+        cmds.textField("modelname", h=30, ip=0 ,pht='model namespace', bgc =self.IKwhite)
+        cmds.text(label="")
+        cmds.button(l="apply", bgc=self.IKblue, c=self.connect)
+        cmds.setParent('..')
+        cmds.setParent('..')
+        
+        ########## cache tab #########
+        
+        child3=cmds.columnLayout("qlCache", adj=1, vis=1)                
+        cmds.rowColumnLayout()
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=5)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(l="*qualoth cache tab*", bgc=self.IKpink, h=20)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(label="-----------set cache path-----------")
+        cmds.text(l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=3)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=4, cw=[(1, 20), (2, 105), (3, 5), (4, 45)])
+        cmds.text(label="")
+        cmds.textField("cacheSolver", ed=0, h=25 , ip = 0, w=80 ,pht='solver select', bgc =self.IKwhite)
+        cmds.text(label="")
+        cmds.button(l="init", bgc=self.mikuGr, c=self.initSolver_qlCache)
+        cmds.setParent('..')    
+
+        cmds.rowColumnLayout(nc=3, cw = [(1,20) , (2,155), (3,25)])
+        cmds.text(l="")
+        cmds.textScrollList("cacheFolderList", ams=0, nr=5, bgc=self.IKwhite)
+        cmds.setParent('..')
+ 
+        cmds.rowColumnLayout (nc=5) 
+        cmds.text(label='', w=20, h=5)
+        cmds.button("mkFolder",l="make cache folder", en=1, w=130, bgc=self.mikuGr, c=self.makeCacheFolder)
+        cmds.text(l='',w=5)
+        cmds.iconTextButton("refreshPath", i='TTF_Refresh',st='iconOnly',h=10,w=20, c=lambda *args:self.pathScrollList())
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="reassign cache virsion", bgc=self.IKblue, c=self.reassignPath)
+        cmds.setParent('..')     
+
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=3)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw = [(1,19) , (2,156), (3,5)])
+        cmds.text( l="", h=10)
+        cmds.separator(h=5, style="in")
+        cmds.text( l="")
+        cmds.setParent('..') 
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(label="-----------view cache path-----------")
+        cmds.text(l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=3)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=4, cw=[(1, 20), (2, 122), (3, 2), (4, 32)])
+        cmds.text(label="")
+        cmds.textField("cachePath", ed=0, h=25 , ip = 0, w=80, bgc =self.IKwhite)
+        cmds.text(label="")
+        cmds.button(l="print", bgc=self.IKblue, c=self.printPath)
+        cmds.setParent('..')      
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="open cache file directory", bgc=self.IKblue, c=self.openCacheDir)
+        cmds.setParent('..')   
+
+        cmds.rowColumnLayout(nc=3, cw = [(1,19) , (2,156), (3,5)])
+        cmds.text( l="", h=10)
+        cmds.separator(h=5, style="in")
+        cmds.text( l="")
+        cmds.setParent('..') 
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(label="-----------control cache-----------")
+        cmds.text(l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=3)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=5, cw = [(1,20) , (2,75), (3,5),(4,75), (5,20)])
+        cmds.text( l="")
+        cmds.button(l="clear", bgc=self.IKblue, c=self.clearCache)
+        cmds.text( l="")
+        cmds.button(l="truncate", bgc=self.IKblue, c=self.truncateCache)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout()
+        cmds.text( l='',h=5)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="export wrap cloth cache", bgc=self.IKpink, c=self.exptWrapCache)
+        cmds.setParent('..')
+        
+        
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=3)
+        cmds.setParent('..')
+        cmds.setParent('..')
+        
+        #-------hrCache-------#
+        
+        child3=cmds.columnLayout("hrCache", adj=1, vis=1)
+        cmds.rowColumnLayout()
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=5)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(l="*fxHair cache tab*", bgc=self.mikuGr, h=20)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(label="-----------set cache path-----------")
+        cmds.text(l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=3)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=4, cw=[(1, 20), (2, 105), (3, 5), (4, 45)])
+        cmds.text(label="")
+        cmds.textField("hr_cacheSolver", ed=0, h=25 , ip = 0, w=80 ,pht='hrSolver select', bgc =self.IKwhite)
+        cmds.text(label="")
+        cmds.button(l="hr_init", bgc=self.IKblue, c=self.initSolver_hrCache)
+        cmds.setParent('..')    
+
+        cmds.rowColumnLayout(nc=3, cw = [(1,20) , (2,155), (3,25)])
+        cmds.text(l="")
+        cmds.textScrollList("hr_cacheFolderList", ams=0, nr=5, bgc=self.IKwhite)
+        cmds.setParent('..')
+ 
+        cmds.rowColumnLayout (nc=5) 
+        cmds.text(label='', w=20, h=5)
+        cmds.button("hr_mkFolder",l="make cache folder", en=1, w=130, bgc=self.IKblue, c=self.hr_makeCacheFolder)
+        cmds.text(l='',w=5)
+        cmds.iconTextButton("hr_refreshPath", i='TTF_Refresh',st='iconOnly',h=10,w=20, c=lambda *args:self.hr_pathScrollList())
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="reassign cache virsion", bgc=self.IKpink, c=self.hr_reassignPath)
+        cmds.setParent('..')     
+
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=3)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw = [(1,19) , (2,156), (3,5)])
+        cmds.text( l="", h=10)
+        cmds.separator(h=5, style="in")
+        cmds.text( l="")
+        cmds.setParent('..') 
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(label="-----------view cache path-----------")
+        cmds.text(l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=3)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=4, cw=[(1, 20), (2, 122), (3, 2), (4, 32)])
+        cmds.text(label="")
+        cmds.textField("hr_cachePath", ed=0, h=25 , ip = 0, w=80, bgc =self.IKwhite)
+        cmds.text(label="")
+        cmds.button(l="print", bgc=self.IKpink, c=self.hr_printPath)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.button(l="open cache file directory", bgc=self.IKpink, c=self.hr_openCacheDir)
+        cmds.setParent('..')   
+
+        cmds.rowColumnLayout(nc=3, cw = [(1,19) , (2,156), (3,5)])
+        cmds.text( l="", h=10)
+        cmds.separator(h=5, style="in")
+        cmds.text( l="")
+        cmds.setParent('..') 
+
+        cmds.rowColumnLayout(nc=3, cw=[(1, 20), (2, 156), (3, 20)])
+        cmds.text(l="")
+        cmds.text(label="-----------control cache-----------")
+        cmds.text(l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout()
+        cmds.text(l="", h=3)
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=5, cw = [(1,20) , (2,75), (3,5),(4,75), (5,20)])
+        cmds.text( l="")
+        cmds.button(l="clear", bgc=self.IKpink, c=self.hr_clearCache)
+        cmds.text( l="")
+        cmds.button(l="truncate", bgc=self.IKpink, c=self.hr_truncateCache)
+        cmds.setParent('..')
+
+        cmds.showWindow ( self.win )
+        #### ui end ####
+        
+    ##############################
+    #         def setting        #
+    ##############################
+    
+    # 1-1. make group
+    def IK_makeGroup(self, gName, pName):
+        cmds.group(em=1, n="%s"%gName, parent="%s"%pName)
+
+    def IK_makeGroupTree(self, *args):
+        cmds.group(em=1, n="cloth")
+        
+        self.IK_makeGroup("wrap_cloth", "cloth")
+        self.IK_makeGroup("wrap_cloth_base", "cloth")
+        self.IK_makeGroup("input_cloth", "cloth")
+        self.IK_makeGroup("cloth_sim", "cloth")
+        
+        self.IK_makeGroup("qlCloth", "cloth_sim")
+        self.IK_makeGroup("out", "cloth_sim")
+        self.IK_makeGroup("final", "cloth_sim")
+        self.IK_makeGroup("set", "cloth_sim")
+        
+        self.IK_makeGroup("con", "set")
+        self.IK_makeGroup("col", "set")
+        self.IK_makeGroup("maya_field", "set")
+        self.IK_makeGroup("ql_field", "set")
+        self.IK_makeGroup("qlGoal_in", "set")
+        self.IK_makeGroup("qlGoal_out", "set")
+        self.IK_makeGroup("qlSpring", "set")
+        
+        cmds.select(cmds.ls("*:Grp_lltCache"))
+        geo=cmds.ls(sl=1)
+        if geo==[]:
+            cmds.select(cmds.ls("Grp_lltCache"))
+            geo=cmds.ls(sl=1)
+            
+        cmds.pickWalk(d="up")        
+        cmds.pickWalk(d="up")
+        ref=cmds.ls(sl=1)
+        lista=[]
+        
+        for i in ref:
+            lista.append(i.split(":"))
+        listb=lista[-1]
+        
+        cmds.select(cl=1)
+        
+        cmds.rename("cloth", (listb[-1]+"_cloth"))
+        cmds.setAttr("wrap_cloth_base.visibility", 0)
+
+    # 1-2. qualoth proxy
+    def IK_qlProxy(self, args):
+        iName=["_input", "_blend"]
+        oMesh=cmds.ls(sl=1)
+        cmds.duplicate()
+        cmds.select("input_cloth", add=1)
+        cmds.parent()
+        
+        dup=cmds.ls(sl=1)
+        
+        for i in range(len(oMesh)):
+            cmds.setAttr(oMesh[i]+".visibility", 0)
+            cmds.rename(dup[i], dup[i]+iName[0])
+            
+        self.oMesh=oMesh
+        self.dup=dup
+        self.iName=iName
+    
+    # 1-3. setting
+    def IK_qlSetting(self, args):
+        input=cmds.listRelatives("input_cloth", c=1)
+        
+        qlName=[]
+        for i in input:
+            cmds.select(i)
+            mel.eval("qlCreateCloth;")
+            qlName.append(i.replace("_input", ""))
+            
+        cmds.parent(cmds.ls("qlSolver*", type="transform"), "cloth_sim")
+        mel.eval('reorder -relative -5 qlSolver1 ;')
+        
+        qlOut=cmds.ls("qlCloth*Out")
+        qlCloth=[]
+        for i in qlOut:
+            qlCloth.append(i.replace("Out", ""))
+        
+        cmds.parent(qlCloth, "qlCloth")
+        cmds.parent(qlOut, "out")
+        
+        for i in range(len(qlName)):
+            cmds.rename(qlOut[i], qlOut[i]+"_"+qlName[i])
+            cmds.rename(qlCloth[i], qlCloth[i]+"_"+qlName[i])
+            
+        cmds.select(input)
+        cmds.duplicate()
+        
+        lista=cmds.ls(sl=1)
+        listb=[]
+        
+        for i in lista:
+            listb.append(i.replace("input1", "blend"))
+        
+        #print listb
+        
+        for i in range(len(listb)):
+            cmds.rename(lista[i], listb[i])
+            cmds.select(listb[i], "final")
+            cmds.parent()
+        
+        bsMesh=cmds.listRelatives("final", c=1)
+        qlOut2=cmds.listRelatives("out", c=1)
+        for i in range(len(qlOut2)):
+            cmds.blendShape(qlOut2[i], bsMesh[i], name="sim_BS")
+            cmds.setAttr(bsMesh[i]+".visibility", 1)
+ 
+        cmds.select(cmds.ls("sim_BS*", type="blendShape"))
+        sBS=cmds.ls(sl=1)
+        for i in range(len(sBS)):
+            cmds.setAttr(sBS[i]+"."+qlOut2[i], 1)
+            
+        cmds.setAttr("qlSolverShape1.selfCollision", 1)
+        
+        layer=["input", "sim_cloth", "sim_blend", "wrap"]
+        layerExists=[]
+        for i in layer:
+            layerExists.append(cmds.objExists(i))
+            
+        if True in layerExists:
+            cmds.delete(layer)
+            
+            cmds.select("input_cloth")
+            cmds.createDisplayLayer(n="input")
+            mel.eval('setAttr input.displayType 0; setAttr input.color 17; setAttr input.overrideColorRGB 0 0 0; setAttr input.overrideRGBColors 0; ;')
+            
+            cmds.select("out")
+            cmds.createDisplayLayer(n="sim_cloth")
+            mel.eval('setAttr sim_cloth.displayType 0; setAttr sim_cloth.color 18; setAttr sim_cloth.overrideColorRGB 0 0 0; setAttr sim_cloth.overrideRGBColors 0; ;')
+            
+            cmds.select("final")
+            cmds.createDisplayLayer(n="sim_blend")
+            mel.eval('setAttr sim_blend.displayType 0; setAttr sim_blend.color 4; setAttr sim_blend.overrideColorRGB 0 0 0; setAttr sim_blend.overrideRGBColors 0; ;')
+            
+            cmds.select("wrap_cloth")
+            cmds.createDisplayLayer(n="wrap")
+            mel.eval('setAttr wrap.displayType 0; setAttr wrap.color 15; setAttr wrap.overrideColorRGB 0 0 0; setAttr wrap.overrideRGBColors 0; ;')
+            
+        else:
+                
+            cmds.select("input_cloth")
+            cmds.createDisplayLayer(n="input")
+            mel.eval('setAttr input.displayType 0; setAttr input.color 17; setAttr input.overrideColorRGB 0 0 0; setAttr input.overrideRGBColors 0; ;')
+            
+            cmds.select("out")
+            cmds.createDisplayLayer(n="sim_cloth")
+            mel.eval('setAttr sim_cloth.displayType 0; setAttr sim_cloth.color 18; setAttr sim_cloth.overrideColorRGB 0 0 0; setAttr sim_cloth.overrideRGBColors 0; ;')
+            
+            cmds.select("final")
+            cmds.createDisplayLayer(n="sim_blend")
+            mel.eval('setAttr sim_blend.displayType 0; setAttr sim_blend.color 4; setAttr sim_blend.overrideColorRGB 0 0 0; setAttr sim_blend.overrideRGBColors 0; ;')
+            
+            cmds.select("wrap_cloth")
+            cmds.createDisplayLayer(n="wrap")
+            mel.eval('setAttr wrap.displayType 0; setAttr wrap.color 15; setAttr wrap.overrideColorRGB 0 0 0; setAttr wrap.overrideRGBColors 0; ;')
+        
+        qlCloth=cmds.listRelatives("qlCloth", c=1)
+        cache="Cache"
+        cacheName=[]
+        for i in qlCloth:
+            cacheName.append(i+cache)
+        
+        fileP=cmds.file(q=1, sn=1)
+        bb=fileP.split("/")
+        folderName="/".join(bb[0:-1])
+        #print cacheP
+        
+        for i in range(len(cacheName)):
+            #print hairSys[i]
+            cmds.setAttr(qlCloth[i]+".cacheName", cacheName[i], type="string")
+            cmds.setAttr(qlCloth[i]+".cacheFolder", folderName, type="string")
+    
+    #1-3-1. individual setting
+    def IK_qlSettingIndi(self, *args):
+        inputIndi=cmds.ls(sl=1)
+
+        qlName=[]
+        for i in inputIndi:
+            cmds.select(i)
+            mel.eval("qlCreateCloth;")
+            if "_input" in inputIndi[0]:
+                qlName.append(i.replace("_input", ""))
+            else:
+                qlName=inputIndi
+
+        qlOut=cmds.ls("qlCloth*Out")
+        qlCloth=[]
+        for i in qlOut:
+            qlCloth.append(i.replace("Out", ""))
+
+        cmds.parent(qlCloth, "qlCloth")
+        cmds.parent(qlOut, "out")
+
+        for i in range(len(qlName)):
+            cmds.rename(qlOut[i], qlOut[i]+"_"+qlName[i])
+            cmds.rename(qlCloth[i], qlCloth[i]+"_"+qlName[i])
+            
+        cmds.select(inputIndi)
+        cmds.duplicate()
+
+        lista=cmds.ls(sl=1)
+        listb=[]
+
+        for i in lista:
+            listb.append(i.replace("input1", "blend"))
+
+        #print listb
+
+        for i in range(len(listb)):
+            cmds.rename(lista[i], listb[i])
+            cmds.select(listb[i], "final")
+            cmds.parent()
+
+        outIndi=[]
+        clothIndi=[]
+
+        print qlOut
+        cmds.select(cl=1)
+        for i in range(len(qlName)):
+            cmds.select(qlOut[i]+"_"+qlName[i], add=1)
+        outIndi=cmds.ls(sl=1)
+        cmds.select(cl=1)
+        for i in range(len(qlName)):
+            cmds.select(qlCloth[i]+"_"+qlName[i], add=1)
+        clothIndi=cmds.ls(sl=1)
+
+        bsIndi=listb
+
+        for i in range(len(bsIndi)):
+            cmds.blendShape(outIndi[i], bsIndi[i], name="sim_BS")
+            cmds.setAttr(bsIndi[i]+".visibility", 1)
+
+        bsMesh=cmds.listRelatives("final", c=1)
+        qlOut2=cmds.listRelatives("out", c=1)
+
+        cmds.select(cmds.ls("sim_BS*", type="blendShape"))
+        sBS=cmds.ls(sl=1)
+        for i in range(len(sBS)):
+            cmds.setAttr(sBS[i]+"."+qlOut2[i], 1)
+
+        if cmds.objExists("qlSolver2"):
+            cmds.delete("qlSolver2")
+        else:
+            pass
+
+    # 1-4. collider setting 
+    def IK_colliderSetting(self, args):
+        col=cmds.ls(sl=1)
+        colN=[]
+        
+        for i in col:
+            colN.append(i.replace("R1:Geo_", "_"))
+            cmds.select("qlSolver1", i)
+            mel.eval("qlCreateCollider;")
+        
+        qlOff=cmds.ls("qlCollider*Offset")
+        qlCol=[]
+        for i in qlOff:
+            qlCol.append(i.replace("Offset", ""))    
+        
+        collider=cmds.ls("qlCollider*", type="transform")
+        
+        cmds.parent(collider, "col")
+        
+        for i in range(len(qlCol)):
+            cmds.rename(qlCol[i], qlCol[i]+colN[i])
+            cmds.rename(qlOff[i], qlOff[i]+colN[i])
+    
+ #1-4-1. wrap
+    def ui_wrap(self, *args):
+        if cmds.columnLayout("wrapUI", q=1, vis=0)==0:
+            cmds.columnLayout("wrapUI", e=1, vis=1)
+        else:
+            cmds.columnLayout("wrapUI", e=1, vis=0)
+            cmds.window(self.win, e=1, h=100)
+    
+    def setWrapList(self, *args):
+        wList=cmds.ls(sl=1)
+        listD=[]
+        listF=cmds.textScrollList(self.w_obj, q=1, ai=1)
+        if wList==[]:
+            cmds.error("you must select at least 1 object!")
+        else:
+            for i in wList:
+                if listF:
+                    if not i in listF:
+                        listD.append(i)
+                else:
+                    listD.append(i)
+                    
+            cmds.textScrollList(self.w_obj, edit=1,ams=1, a=listD)
+            
+    def removeObjList_wrap(self, *args):
+        selList=cmds.textScrollList(self.w_obj, q=1, si=1)
+        cmds.textScrollList(self.w_obj, edit=1, removeItem=selList)
+    
+    def clearObjList_wrap(self, *args):
+        txList=cmds.textScrollList(self.w_obj, q=1, ai=1)
+        cmds.textScrollList(self.w_obj, edit=1, ri=txList)
+    
+    def setSimulMesh(self, *args):
+        sList=cmds.ls(sl=1, type="transform")
+        if len(sList)>=2:
+            cmds.error("select only one mesh")
+        elif len(sList)<1:
+            cmds.error("nothing selected")
+        else:
+            cmds.textField(self.w_mesh, e=1, tx=sList[0])
+
+    def selectWrapList(self, *args):
+        selList=cmds.textScrollList(self.w_obj, q=1, si=1)
+        cmds.select(selList)
+            
+    def createWrap(self, *args):
+        oriMesh=cmds.textScrollList(self.w_obj, q=1, ai=1)
+        blendMesh=[cmds.textField(self.w_mesh, q=1, text=1)]
+        cmds.select(oriMesh)
+        cmds.duplicate()
+        cmds.parent(w=1)
+        wrapPr=cmds.ls(sl=1)
+        wrapMesh=[]
+        wrapN=["_wrap"]
+        for i in oriMesh:
+            wrapMesh.append(i+"_wrap")
+
+        for i in range(len(wrapMesh)):
+            cmds.rename(oriMesh[i]+wrapN[0])
+        
+        cmds.select(wrapMesh, "wrap_cloth")
+        cmds.parent()
+        
+        for i in range(len(wrapMesh)):
+            cmds.select(wrapMesh[i], blendMesh[0])
+            #print cmds.ls(sl=1)
+            mel.eval("CreateWrap;")
+        for i in blendMesh:
+            cmds.select(cmds.ls(i+"Base*", type="mesh"))
+        cmds.pickWalk(d="up")    
+        cmds.select("wrap_cloth_base", add=1)
+        cmds.parent()
+
+        for i in oriMesh:
+            try:
+                cmds.setAttr(i+".visibility", 0)
+            except:
+                pass
+
+        sys.stdout.write("wrap complited")
+        
+    # 1-5. constraints
+    
+    def attachConst(self,args):
+        atConVt=cmds.ls(sl=1)
+        atConMs=atConVt[0].split(".")
+        atConN=[atConMs[0]]
+        mel.eval('qlCreateAttachConstraint;')
+        cmds.select(cmds.ls("qlAttachConstraint*", type="qlAttachConstraintShape"))
+        cmds.pickWalk(d="up")
+        ac=cmds.ls(sl=1)
+        for i in ac:
+            cmds.rename(i, atConN[0]+"_"+i)
+        ac=cmds.ls("*qlAttachConstraint*", type="transform")
+        #cmds.rename(ac, str(atConN[0])+"_"+i)
+        cmds.parent(ac, "con")
+        
+    def createSpring(self,args):
+        atConVt=cmds.ls(sl=1)
+        atConMs=atConVt[0].split(".")
+        atConN=[atConMs[0]]
+        mel.eval('qlCreateSpring;')
+        cmds.select(cmds.ls("qlSpring*", type="qlSpringShape"))
+        cmds.pickWalk(d="up")
+        sp=cmds.ls(sl=1)
+        spN=[]
+        for i in sp:
+            spN=cmds.rename(i, atConN[0]+"_"+i)
+        cmds.parent(spN, "qlSpring")
+    
+    def attachSpring(self, args):
+        atConVt=cmds.ls(sl=1)
+        atConMs=atConVt[0].split(".")
+        atConN=[atConMs[0]]
+        mel.eval('qlCreateAttachSpring;')
+        cmds.select(cmds.ls("qlAttachSpring*", type="qlAttachSpringShape"))
+        cmds.pickWalk(d="up")
+        sp=cmds.ls(sl=1)
+        spN=[]
+        for i in sp:
+            spN=cmds.rename(i, atConN[0]+"_"+i)
+        cmds.parent(spN, "qlSpring")
+
+    def goalConst(self, args):
+        mel.eval('qlCreateGoalConstraint;')
+        cmds.parent("ql*GoalConstraint", "ql*Goal", "qlGoal_out")
+    
+    ###---paint attribute---###
+   
+    def LSM(self, args):
+        mel.eval("qlPaintClothAttribute lengthScaleMap;")
+
+    def DM(self, args):
+        mel.eval("qlPaintClothAttribute densityMap;")
+            
+    def FRM(self, args):
+        mel.eval("qlPaintClothAttribute frictionMap;")
+        
+    def STM(self, args):
+        mel.eval("qlPaintClothAttribute stretchMap;")
+        
+    def CPM(self, args):
+        mel.eval("qlPaintClothAttribute compressionMap;")
+        
+    def SM(self, args):
+        mel.eval("qlPaintClothAttribute shearMap;")
+        
+    def SDM(self, args):
+        mel.eval("qlPaintClothAttribute stretchDampMap;")
+        
+    def BM(self, args):
+        mel.eval("qlPaintClothAttribute bendMap;")
+
+    def BDM(self, args):
+        mel.eval("qlPaintClothAttribute bendDampMap;")
+   
+    def PM(self, args):
+        mel.eval("qlPaintClothAttribute plasticityMap;")
+   
+    def PSM(self, args):
+        mel.eval("qlPaintClothAttribute pressureMap;")
+   
+    def VDM(self, args):
+        mel.eval("qlPaintClothAttribute viscousDampMap;")
+
+    def RM(self, args):
+        mel.eval("qlPaintClothAttribute rubberMap;")
+
+    def URM(self, args):
+        mel.eval("qlPaintClothAttribute uRubberMap;")
+
+    def VRM(self, args):
+        mel.eval("qlPaintClothAttribute vRubberMap;")
+
+    def ADM(self, args):
+        mel.eval("qlPaintClothAttribute airDragMap;")
+
+    def FM(self, args):
+        mel.eval("qlPaintClothAttribute fieldMap;")
+        
+    def SCM(self, args):
+        mel.eval("qlPaintClothAttribute softConstraintMap;")
+    
+    def PCM(self, args):
+        mel.eval("qlPaintClothAttribute proximityCriterionMap;")
+    
+    def TM(self, args):
+        mel.eval("qlPaintClothAttribute thicknessMap;")
+    
+    def CM(self, args):
+        mel.eval("qlPaintClothAttribute selfCollisionMap;")
+    
+    def CMS(self, args):
+        mel.eval("qlPaintClothAttribute solidConstraintMap;")
+    
+    def GM(self, args):
+        mel.eval("qlPaintClothAttribute gravityMap;")
+    
+    def PWM(self, args):
+        mel.eval("qlPaintClothAttribute preserveWrinkleMap;")
+
+    #---collider Paint---#
+    def OM(self, args):
+        mel.eval("qlPaintColliderAttribute offsetMap;")
+   
+    def FRM(self, args):
+        mel.eval("qlPaintColliderAttribute frictionMap;")
+   
+    def CSM(self, args):
+        mel.eval("qlPaintColliderAttribute collisionMap;")
+   
+    def PRM(self, args):
+        mel.eval("qlPaintColliderAttribute priorityMap;")
+
+    #---goal Paint---#
+    def STM(self, args):
+        mel.eval("qlGoalConstraintAttribute strengthMap;")
+
+    def DPM(self, args):
+        mel.eval("qlGoalConstraintAttribute dampingMap;")
+
+    def FLM(self, args):
+        mel.eval("qlGoalConstraintAttribute forceLimitMap;")
+
+    # 1-6. fields
+    
+    def createField(self, args):
+        mel.eval('VolumeAxis;')
+        cmds.parent("volume*Field*", "maya_field")
+        
+    def IK_initField(self, *args):
+        
+        #type=args[0]
+        sel_field=cmds.ls(sl=1, type="volumeAxisField")
+        
+        if sel_field==[]:
+            cmds.error("nothing select")
+        else:
+            cmds.textField("currentField", e=1, tx=str(sel_field[0]))
+            sys.stdout.write("Field init: "+sel_field[0])
+    
+    def IK_connectField(self, *args):
+        field=cmds.textField("currentField", q=1, text=1)
+        sel_qualothMesh=cmds.ls(sl=1, type="transform", tr=1)
+        
+        qlField=cmds.listRelatives("ql_field", c=1)
+
+        if qlField == None:
+            pass    
+        else:
+            cmds.parent(qlField, w=1)
+            
+        for i in sel_qualothMesh:
+            cmds.select(i, r=1)
+            mel.eval('PolySelectConvert 3;')
+            cmds.select(field, add=1)
+            mel.eval("qlConnectField;")
+        
+        qlField=cmds.ls("qlFieldFilter*", type="transform")
+        cmds.parent(qlField, "ql_field")
+        
+    # 2-1. shaders
+    
+    def colorPalette(self, *args):
+        if cmds.columnLayout("palette", q=1, vis=0)==0:
+            cmds.columnLayout("palette", e=1, vis=1)
+        else:
+            cmds.columnLayout("palette", e=1, vis=0)
+            cmds.window(self.win, e=1, h=100)
+        
+    def createBaseShader(self,colorV_):
+        if not colorV_ == 'gray':
+            if cmds.objExists('IKShader_sets'):
+                pass
+            else:
+                SG_=cmds.sets(r=1,em=1,n='IKShader_'+colorV_+'SG')
+                
+            if cmds.objExists('IKShader_'+colorV_):
+                print 'IKShader_'+colorV_+' already exists'
+            else:
+                Mat_ = cmds.shadingNode('lambert', asShader=1,n='IKShader_'+colorV_)
+                cmds.connectAttr(Mat_ + '.outColor', 'IKShader_'+colorV_+'SG'+ '.surfaceShader',f=1)
+                R=cmds.button(colorV_,q=1,bgc=1)[0]
+                G=cmds.button(colorV_,q=1,bgc=1)[1]
+                B=cmds.button(colorV_,q=1,bgc=1)[2]
+                            
+                cmds.setAttr('IKShader_'+colorV_+'.color',float(R),float(G),float(B))
+            COLOR='IKShader_'+colorV_
+        
+        else:
+            COLOR='lambert1'
+            
+        return COLOR
+        
+    def setShader(self,colorV_):
+        #print colorV_
+        selectTemp=cmds.ls(sl=1)
+        COLOR=self.createBaseShader(colorV_)
+        cmds.select(selectTemp,r=1)
+        cmds.hyperShade(assign =COLOR)
+           
+    def selObjList(self, *args):
+        tList=cmds.ls(sl=1)
+        #listB=[]
+        tmpList=[]
+        listB=cmds.textScrollList(self.c_obj, q=1, ai=1)
+        if tList==[]:
+            cmds.error("you must select at least 1 object!")
+        else:
+            for i in tList:
+                if listB:
+                    if not i in listB:
+                        tmpList.append(i)
+                else:
+                    tmpList.append(i)
+                    
+            cmds.textScrollList(self.c_obj, edit=1,ams=1, a=tmpList)
+
+    def removeObjList(self, *args):
+        selList=cmds.textScrollList(self.c_obj, q=1, si=1)
+        cmds.textScrollList(self.c_obj, edit=1, removeItem=selList)
+    
+    def clearObjList(self, *args):
+        txList=cmds.textScrollList(self.c_obj, q=1, ai=1)
+        cmds.textScrollList(self.c_obj, edit=1, ri=txList)
+
+    def selectColorList(self, *args):
+        selList=cmds.textScrollList(self.c_obj, q=1, si=1)
+        cmds.select(selList)
+
+    # 2-2. playBlast
+    
+    def videoType(self):
+        typeV=cmds.radioButtonGrp("vidType", q=1, sl=1)
+        if typeV==1:
+            return "mov"
+        else:
+            return "avi"
+
+    def refresh(self):
+        startFrame=int(cmds.playbackOptions(q=True, min=True))
+        endFrame=int(cmds.playbackOptions(q=True, max=True))
+        cmds.textField( self.startTxt, edit=True,tx=startFrame)
+        cmds.textField( self.endTxt, edit=True,tx=endFrame)
+
+        fileFullPath=cmds.file(q=1, sn=1)
+        path=[fileFullPath.split('/scenes/')[0]+'/movies']
+        #print (path)
+        if path==[u'/movies']:
+            cmds.textField("setPath", e=1, tx="                 x_x")
+            cmds.error("please set directory!")
+        else:
+            pathA=[fileFullPath.split('/scenes/')[1]]
+            pathb=[]
+        
+        for i in pathA:
+            pathb.append(i.replace(".mb", "."+self.videoType()))
+            
+        pathC=path[0]+"/"+pathb[0]
+        
+        cmds.textField("setPath", e=1, tx=str(pathC))
+        
+        self.pathC=pathC
+
+    def runPlayblast(self,args):
+        stF = cmds.textField(self.startTxt,q=1,text=1)
+        endF = cmds.textField(self.endTxt,q=1,text=1)
+        pathTmp=cmds.textField('setPath',q=1,text=1)
+        path=(pathTmp.split("."))[0]+"."+self.videoType()
+        cmds.textField("setPath", e=1, text=str(path))
+        size=[cmds.getAttr('defaultResolution.width'),cmds.getAttr('defaultResolution.height')]
+        
+        if(int(endF)<=int(stF)):
+            cmds.error("set startFrame < endFrame")
+        else:
+            if self.videoType()=="mov":
+                cmds.playblast( f=path, format="qt", compression="MPEG-4 비디오", clearCache=1, showOrnaments=1, offScreen=1, sequenceTime=0, viewer=1, st=stF, et=endF, quality=100, percent=100, wh=size, forceOverwrite=1)
+            elif self.videoType()=="avi":
+                cmds.playblast( f=path, format="avi", compression="none", clearCache=1, showOrnaments=1, offScreen=1, sequenceTime=0, viewer=1, st=stF, et=endF, quality=100, percent=100, wh=size, forceOverwrite=1)
+                
+            sys.stdout.write(path+"\n")
+        
+    def openPlayblastDir(self, args):
+        pathC=self.pathC
+        dirPath=pathC.split("/movies/")[0]+"/movies"
+        #print dirPath
+        os.startfile(dirPath)
+        sys.stdout.write("open "+dirPath+"\n")
+        
+    # 2-3. blendShape
+
+    def connect(self, *args):
+        name_Check = cmds.textField('modelname', q=1, tx=1)+":"#타겟 네임스페이스
+        bbList=[]
+        cmds.select(cmds.listRelatives(cmds.ls(sl=1)[0], ad=1, type="mesh"))
+        cmds.pickWalk(d="up")
+        wList=cmds.ls(sl=1)
+        if "_wrap" in wList[0]:
+            bbList=[]
+            #print wList
+            wTmp=[]
+            wTmp.append(wList[0].split(":"))
+            wNs=[wTmp[0][0]+":"]
+            tmp=[]
+            for i in wList:
+                tmp.append(i.replace(wNs[0], ""))
+            #print tmp
+            oriMesh=[]
+            for i in tmp:
+                oriMesh.append(i.replace("_wrap", ""))
+            #print oriMesh
+            for i in range(len(wList)):
+                print wList[i]
+                cmds.blendShape(wList[i], name_Check+oriMesh[i], name="sim_BS_wrap")
+                
+            cmds.select(cmds.ls("sim_BS_wrap*", type="blendShape"))
+            bbList=cmds.ls(sl=1)
+            
+            for i in range(len(bbList)):
+                cmds.setAttr(bbList[i]+"."+tmp[i], 1)
+                
+            if cmds.objExists("Sim_*_BS"):
+                cmds.select("Sim_*_BS")
+                addList=cmds.ls(sl=1)
+                #print len(addList) 
+                for count,obj in enumerate(bbList):
+                    cmds.rename(obj,"Sim_"+str(len(addList)+(count+1)).zfill(2)+"_BS")
+            else:
+                for count,obj in enumerate(bbList):
+                    cmds.rename(obj,"Sim_"+str(count+1).zfill(2)+"_BS")   
+
+            meshList=[]
+            for i in oriMesh:
+                meshList.append(name_Check+i)
+            
+            cmds.select(meshList)
+            cmds.sets(n="colorSet")
+            cmds.select(cl=1)
+        else:
+            bbList=[]
+            wTmp=[]
+            wTmp.append(wList[0].split(":"))
+            wNs=[wTmp[0][0]+":"]
+            tmp=[]
+            for i in wList:
+                tmp.append(i.replace(wNs[0], ""))
+                
+            for i in range(len(wList)):
+                print wList[i]
+                cmds.blendShape(wList[i], name_Check+tmp[i], name="sim_BS_wrap")
+                
+            cmds.select(cmds.ls("sim_BS_wrap*", type="blendShape"))
+            bbList=cmds.ls(sl=1)
+            
+            for i in range(len(bbList)):
+                cmds.setAttr(bbList[i]+"."+tmp[i], 1)
+                
+            if cmds.objExists("Sim_*_BS"):
+                cmds.select("Sim_*_BS")
+                addList=cmds.ls(sl=1)
+                #print len(addList) 
+                for count,obj in enumerate(bbList):
+                    cmds.rename(obj,"Sim_"+str(len(addList)+(count+1)).zfill(2)+"_BS")
+            else:
+                for count,obj in enumerate(bbList):
+                    cmds.rename(obj,"Sim_"+str(count+1).zfill(2)+"_BS")
+            meshList=[]
+            for i in tmp:
+                meshList.append(name_Check+i)
+            
+            cmds.select(meshList)
+            cmds.sets(n="colorSet")
+            cmds.select(cl=1)
+            
+###################################### xgen hair setting ######################################
+
+    def hr_xgenHeadV(self, *args):
+        xgenHead=cmds.textField("xgen_head", q=1, text=1)
+        return xgenHead
+    
+    def hr_yetiHeadV(self, *args):
+        yetiHead=cmds.textField("yeti_head", q=1, text=1)
+        return yetiHead        
+
+    def hr_findDescriptionName(self, *args):
+        collection=cmds.ls(type="xgmPalette")
+        description=cmds.listRelatives(collection, c=1)
+        return description
+    
+    def hr_cvGroupNaming(self, *args):
+        description=self.hr_findDescriptionName()
+        cvNameTmp=[]
+        cvName=[]
+        
+        for i in description:
+            cvNameTmp.append(i.replace("_description", ""))
+        for i in cvNameTmp:
+            cvName.append(i.replace("char_", ""))
+        
+        return cvName
+    
+    def hr_frameV(self, *args):
+        stF=int(cmds.playbackOptions(q=True, min=True))
+        endF=int(cmds.playbackOptions(q=True, max=True))
+        cmds.textField("hr_stF", e=1, text=stF)
+        cmds.textField("hr_endF", e=1, text=endF)
+        #return stF
+
+    def hr_firstCachePath(self, *args):
+        hrSys=cmds.listRelatives("hrSystem", c=1)
+        cache="Cache"
+        hr_cacheName=[]
+        for i in hrSys:
+            hr_cacheName.append(i+cache)
+        
+        fileP=cmds.file(q=1, sn=1)
+        bb=fileP.split("/")
+        hr_folderName="/".join(bb[0:-1])
+        #print cacheP
+        
+        for i in range(len(hr_cacheName)):
+            #print hairSys[i]
+            cmds.setAttr(hrSys[i]+".cacheName", hr_cacheName[i], type="string")
+            cmds.setAttr(hrSys[i]+".cacheFolder", hr_folderName, type="string")
+
+    def hr_alembicPath(self, *args):
+        fPath=cmds.file(q=1, sn=1)
+        #print fPath
+        fPath_sl=fPath.split("/")
+        fPath_re="/".join(fPath_sl[0:10])+("/cache/alembic/hair/")#이게 최종 캐시 빠질 폴더
+        cmds.textField("hr_setPath", e=1, text=fPath_re)
+        return fPath_re
+
+    def hr_xgenHeadInit(self, *args):
+        sel=cmds.ls(sl=1)
+        xgenHead=cmds.textField("xgen_head", e=1, text=sel[0])
+        #print xgenHead
+
+    def hr_IK_makeGroupTree(self, *args):
+        cmds.group(em=1, n="fxHair")
+        
+        self.IK_makeGroup("input_hair", "fxHair")
+        self.IK_makeGroup("hair_sim", "fxHair")
+        
+        self.IK_makeGroup("hrSystem", "hair_sim")
+        self.IK_makeGroup("hr_sim", "hair_sim")
+        self.IK_makeGroup("hr_final", "hair_sim")
+        self.IK_makeGroup("hr_set", "hair_sim")
+        
+        self.IK_makeGroup("hr_con_n_attach", "hr_set")
+        self.IK_makeGroup("hr_col", "hr_set")
+        self.IK_makeGroup("hr_mayaField", "hr_set")
+        self.IK_makeGroup("hrSpring", "hr_set")
+        self.IK_makeGroup("hr_staticCache", "hr_set")
+        
+        geo=cmds.ls("*:GrpGeo")
+        if geo==[]:
+            geo=cmds.ls("GrpGeo")
+            if geo==[]:
+                geo=cmds.ls("GrpGeo_Cache")
+                if geo==[]:
+                    geo=cmds.ls("*:GrpGeo_Cache") #이름 규칙 통일 좀 하면 안 될까요? 
+        cmds.select(geo)
+        cmds.pickWalk(d="up")
+        ref=cmds.ls(sl=1)
+        lista=[]
+        
+        for i in ref:
+            lista.append(i.split(":"))
+        listb=lista[-1]
+        
+        cmds.select(cl=1)
+        
+        cmds.rename("fxHair", (listb[-1]+"_fxHair"))
+
+    def hr_setInputCv(self, *args):
+        description=self.hr_findDescriptionName()
+
+        cmds.select(description)
+        cmds.pickWalk(d="down")
+        cmds.pickWalk(d="right")
+        cvDes=cmds.ls(sl=1)
+
+        for i in cvDes:
+            cmds.select(i)
+            mel.eval('xgmCreateCurvesFromGuidesOption(1,1,"")')
+
+        collection=cmds.ls(type="xgmPalette")
+        cmds.setAttr(collection[0]+".visibility", 0)
+        
+        cmds.delete("xgGroomLayer")
+    
+    def hr_hairSetting(self, *args):
+
+        cvName=self.hr_cvGroupNaming()
+        input=cmds.listRelatives("xgGroom", c=1)
+                
+        for i in range(len(input)):
+            cmds.rename(input[i], cvName[i]+"_input")
+            
+        input=cmds.listRelatives("xgGroom", c=1)
+        
+        final=[]
+        for i in input:
+            final.append(i.replace("_input", "_finalCv"))
+        
+        cmds.parent(input, "input_hair")
+
+        for i in range(len(input)):
+            testa=cmds.listRelatives(input[i])
+            cmds.duplicate(testa)
+            testb=cmds.ls("*tempCurve1")
+            cmds.parent(testb, "hr_final")
+            cmds.group(testb, name=final[i])
+            for j in range(len(testb)):
+                cmds.rename(testb[j], testb[j]+"_finalCv")
+
+        for i in input:
+            tmp=cmds.listRelatives(i, c=1)
+            head=cmds.textField("xgen_head", q=1, text=1)
+            cmds.select(tmp, head)
+            mel.eval("hrCreateHairSystem;")
+        
+        outCv=(cmds.ls("*OutputCurves"))
+        cmds.select(cmds.ls(type="hrHairSystemShape"))
+        hrSys=cmds.pickWalk(d="up")
+        cmds.select(cmds.ls(type="hrSolverShape"))
+        hrSolver=cmds.pickWalk(d="up")
+        cmds.select(cl=1)
+        
+        cmds.parent(outCv, "hr_sim")
+        cmds.parent(hrSys, "hrSystem")
+        cmds.parent(hrSolver, "hair_sim")
+        cmds.delete("xgGroom")
+        
+        for i in range(len(hrSys)):
+            cmds.rename(hrSys[i], cvName[i]+"_hrHairSystem")
+            cmds.rename(outCv[i], cvName[i]+"_simulCv")
+        
+        outCv=cmds.listRelatives("hr_sim", c=1)
+        
+        cmds.setAttr("input_hair.visibility", 0)
+        cmds.setAttr("hr_sim.visibility", 0)
+        
+        eyebrow=cmds.ls("*:*eyebrow*hrHairSystem")
+        eyebrow.append(cmds.ls("*eyebrow*hrHairSystem"))
+        
+        if eyebrow[0]==[]:
+            pass
+        else:
+            for i in eyebrow[0]:
+                cmds.setAttr(i+".useRootLengthRatio", 1)
+                cmds.setAttr(i+".rootLengthRatio", 1)
+
+        finCv=cmds.listRelatives("hr_final")
+        
+        for i in range(len(finCv)):
+            pfxCv=cmds.listRelatives(finCv[i], c=1)
+            cmds.select(pfxCv, head)
+            mel.eval("hrCreateMayaHairFromCurves;")
+                
+        cmds.select(cmds.ls("pfxHair*", "hairSystem*", "hairSystem*Follicles", type="transform"))
+        outPfx=cmds.ls("pfxHair*", type="transform")
+        cmds.select(cmds.ls("hairSystem*Shape*"))
+        cmds.pickWalk(d="up")
+        outSys=cmds.ls(sl=1)
+        cmds.select(cl=1)
+        outFoll=cmds.ls("hairSystem*Follicles", type="transform")
+        
+        lock=outSys+outFoll
+
+        name=cvName
+        outPN=[]
+        outSN=[]
+        outFN=[]
+        
+        for i in range(len(outPfx)):
+            cmds.rename(outPfx[i], name[i]+"_"+outPfx[i])
+            cmds.rename(outSys[i], name[i]+"_"+outSys[i])
+            cmds.rename(outFoll[i], name[i]+"_"+outFoll[i])
+            outPN.append(name[i]+"_"+outPfx[i])
+            outSN.append(name[i]+"_"+outSys[i])
+            outFN.append(name[i]+"_"+outFoll[i])
+        
+        cmds.select(outPN, outSN, outFN)
+        
+        cmds.group(name="PFX_out")
+        lock=outSN+outFN
+        cmds.parent("PFX_out", "hair_sim")
+        for i in lock:
+            cmds.setAttr(i+".visibility", 0)
+
+        for i in outSN:
+            cmds.setAttr(i+".hairsPerClump", 18)
+            cmds.setAttr(i+".clumpWidth", .8)
+            cmds.setAttr(i+".thinning", .253)
+            cmds.setAttr(i+".clumpWidthScale[2].clumpWidthScale_Position", .58)
+            cmds.setAttr(i+".clumpWidthScale[2].clumpWidthScale_FloatValue", .88)
+            cmds.setAttr(i+".clumpWidthScale[2].clumpWidthScale_Interp", 2)
+            cmds.setAttr(i+".clumpWidthScale[1].clumpWidthScale_FloatValue", .14)
+            cmds.setAttr(i+".hairColor", 1,0,0, type="double3")
+            cmds.setAttr(i+".hairColorScale[0].hairColorScale_Color", 0, 0, 0, type="double3")
+            
+        viewInput=cmds.listRelatives("hrSystem")
+        for i in viewInput:
+            cmds.setAttr(i+".useStartCurveAsGoal", 1)
+            cmds.setAttr(i+".useRootLengthRatio", .15)
+            cmds.select(i)
+            mel.eval("hrShowInputCurves;")
+        
+        cmds.blendShape("hr_sim", "hr_final", o="world", name="hr_BS")
+        cmds.setAttr("hr_BS.hr_sim", 1)
+            
+        mel.eval("reorder -relative -4 hrSolver1 ;")
+        self.hr_firstCachePath()
+        cmds.select(cl=1)    
+
+    def hr_xgenUI(self, *args):
+        if cmds.columnLayout("xgen_hrSetUI", q=1, vis=0)==0:
+            cmds.columnLayout("xgen_hrSetUI", e=1, vis=1)
+        else:
+            cmds.columnLayout("xgen_hrSetUI", e=1, vis=0)
+            cmds.window(self.win, e=1, h=100)
+
+############################### yetiHairSetting ###############################
+    
+    def hr_yetiHeadInit(self, *args):
+        sel=cmds.ls(sl=1)
+        yetiHead=cmds.textField("yeti_head", e=1, text=sel[0])
+        #print xgenHead
+
+    def hr_yetiOriCvInit(self, *args):
+        sel=cmds.ls(sl=1)
+        yetiCv=cmds.textField("yeti_cv", e=1, text=sel[0])
+
+    def hr_yetiSetting(self, *args):
+        head=cmds.textField("yeti_head", q=1, text=1)
+        yetiCv=cmds.textField("yeti_cv", q=1, text=1)
+
+        oriCv=cmds.listRelatives(yetiCv, c=1)
+        input=[]
+        finalCv=[]
+        
+        for i in range(len(oriCv)):
+            #cmds.select(cl=1)
+            tempCv=cmds.listRelatives(oriCv[i], c=1)
+            print tempCv
+            cmds.duplicate(tempCv)
+            cmds.select(cmds.ls(tempCv))
+            cmds.group(name=oriCv[i]+"_finalCv")
+            finalCv.append(oriCv[i]+"_finalCv")
+
+        cmds.parent(finalCv, "hr_final")
+        
+        for i in oriCv:
+            cmds.duplicate(i, name=i+"_input")
+            input.append(i.replace(i, i+"_input"))
+        
+        cmds.parent(input, "input_hair")
+        cmds.delete(yetiCv)
+            
+        for i in input:
+            tmp=cmds.listRelatives(i, c=1)
+            cmds.select(tmp, head)
+            mel.eval("hrCreateHairSystem;")
+        
+        outCv=(cmds.ls("*OutputCurves"))
+        cmds.select(cmds.ls(type="hrHairSystemShape"))
+        hrSys=cmds.pickWalk(d="up")
+        cmds.select(cmds.ls(type="hrSolverShape"))
+        hrSolver=cmds.pickWalk(d="up")
+        
+        cmds.parent(hrSolver, "hair_sim")
+        cmds.parent(outCv, "hr_sim")
+        cmds.parent(hrSys, "hrSystem")
+        mel.eval("reorder -relative -5 hrSolver1 ;")
+
+        for i in range(len(hrSys)):
+            cmds.rename(outCv[i], oriCv[i]+"_simCv")
+            
+        cmds.setAttr("hr_sim.visibility", 0)
+        
+        for i in range(len(hrSys)):
+            cmds.rename(hrSys[i], oriCv[i]+"_hrHairSystem")
+        
+        eyebrow=cmds.ls("*:*eyebrow*hrHairSystem")
+        eyebrow.append(cmds.ls("*eyebrow*hrHairSystem"))
+
+        if eyebrow[0]==[]:
+            pass
+        else:
+            for i in eyebrow[0]:
+                cmds.setAttr(i+".useRootLengthRatio", 1)
+                cmds.setAttr(i+".rootLengthRatio", 1)
+
+        finCv=cmds.listRelatives("hr_final")
+        
+        for i in range(len(finCv)):
+            pfxCv=cmds.listRelatives(finCv[i], c=1)
+            cmds.select(pfxCv, head)
+            mel.eval("hrCreateMayaHairFromCurves;")
+                
+        cmds.select(cmds.ls("pfxHair*", "hairSystem*", "hairSystem*Follicles", type="transform"))
+        outPfx=cmds.ls("pfxHair*", type="transform")
+        cmds.select(cmds.ls("hairSystem*Shape*"))
+        cmds.pickWalk(d="up")
+        outSys=cmds.ls(sl=1)
+        cmds.select(cl=1)
+        outFoll=cmds.ls("hairSystem*Follicles", type="transform")
+        
+        lock=outSys+outFoll
+        
+        name=oriCv
+        outPN=[]
+        outSN=[]
+        outFN=[]
+        
+        for i in range(len(outPfx)):
+            cmds.rename(outPfx[i], name[i]+"_"+outPfx[i])
+            cmds.rename(outSys[i], name[i]+"_"+outSys[i])
+            cmds.rename(outFoll[i], name[i]+"_"+outFoll[i])
+            outPN.append(name[i]+"_"+outPfx[i])
+            outSN.append(name[i]+"_"+outSys[i])
+            outFN.append(name[i]+"_"+outFoll[i])
+        
+        cmds.select(outPN, outSN, outFN)
+        
+        cmds.group(name="PFX_out")
+        lock=outSN+outFN
+        cmds.parent("PFX_out", "hair_sim")
+        for i in lock:
+            cmds.setAttr(i+".visibility", 0)
+
+        for i in outSN:
+            cmds.setAttr(i+".hairsPerClump", 18)
+            cmds.setAttr(i+".clumpWidth", .8)
+            cmds.setAttr(i+".thinning", .253)
+            cmds.setAttr(i+".clumpWidthScale[2].clumpWidthScale_Position", .58)
+            cmds.setAttr(i+".clumpWidthScale[2].clumpWidthScale_FloatValue", .88)
+            cmds.setAttr(i+".clumpWidthScale[2].clumpWidthScale_Interp", 2)
+            cmds.setAttr(i+".clumpWidthScale[1].clumpWidthScale_FloatValue", .14)
+            cmds.setAttr(i+".hairColor", 1,0,0, type="double3")
+            cmds.setAttr(i+".hairColorScale[0].hairColorScale_Color", 0, 0, 0, type="double3")
+            
+        viewInput=cmds.listRelatives("hrSystem")
+        for i in viewInput:
+            cmds.setAttr(i+".useStartCurveAsGoal", 1)
+            cmds.setAttr(i+".useRootLengthRatio", .15)
+            cmds.select(i)
+            mel.eval("hrShowInputCurves;")
+        
+        cmds.blendShape("hr_sim", "hr_final", o="world", name="hr_BS")
+        cmds.setAttr("hr_BS.hr_sim", 1)
+        
+        mel.eval("reorder -relative -4 hrSolver1 ;")
+        self.hr_firstCachePath()
+        cmds.select(cl=1)     
+
+    def hrCollider(self, *args):
+        hrCol=cmds.ls(sl=1)
+        hrSys=cmds.listRelatives("hrSystem", c=1)
+        
+        for i in hrCol:
+            cmds.select(i, hrSys[0])
+            mel.eval("hrCreateCollider;")
+        
+        cmds.select("hrCollider*")
+        cmds.select("hr_col", add=1)
+        cmds.parent()
+        cmds.select(cl=1)
+    
+    def hrConstraint(self, *args):
+        mel.eval("hrConstrainHair;")
+        cmds.select(cmds.ls("hrConstraint*", type="transform"))
+        cmds.select("hr_con_n_attach", add=1)
+        cmds.parent()
+        cmds.select(cl=1)
+    
+    def hrAttach(self, *args):
+        mel.eval("hrAttachHair;")
+        cmds.select(cmds.ls("hrAttachConstraint*", type="transform"))
+        cmds.select("hr_con_n_attach", add=1)
+        cmds.parent()
+        cmds.select(cl=1)
+    
+    def hrSpring(self, *args):
+        mel.eval("hrCreateSpring;")
+        cmds.select(cmds.ls("hrSpring*", type="transform"))
+        cmds.select("hrSpring", add=1)
+        cmds.parent()
+        cmds.select(cl=1)
+    
+    def hr_createField(self, args):
+        mel.eval('VolumeAxis;')
+        cmds.parent("volume*Field*", "hr_mayaField")
+    
+    def hr_connectField(self, *args):
+        mel.eval("hrConnectField;")
+        sys.stdout.write("\nfield connect with selected node")
+    
+    def hr_disConnectField(self, *args):
+        mel.eval("hrDisconnectField;")
+        sys.stdout.write("\nfield disconnect with selected node")
+
+    def hr_initHairGrp(self, *args):
+        sel_grp=cmds.ls(sl=1)
+        
+        if len(sel_grp)>1:
+            cmds.error("select only one grp")
+        else:
+            cmds.textField("hr_exptGrp", e=1, tx=sel_grp[0])
+            fPath_re=self.hr_alembicPath()
+            self.hr_frameV()
+
+    def hr_exportAlembic(self, *args):
+        textGrp=cmds.textField("hr_exptGrp", q=1, text=1)
+        #print textGrp
+
+        if textGrp[0]=="":
+            cmds.error("nothing selected")
+        else:
+            textNs=textGrp.split(":")
+            if textNs[-1]==textGrp:
+                cd=cmds.confirmDialog(title="confirm", message="Have you checked all the options?", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+                if cd=="Yes":
+                    outList=cmds.listRelatives(textGrp, c=1)
+                    #print outList
+                    nameList=self.hr_findDescriptionName()
+                    fPath_re=self.hr_alembicPath()
+                     
+                    if not os.path.exists(fPath_re):#만들어진 폴더 없을 때 
+                        os.makedirs(fPath_re)
+                    
+                    self.fPath_re=fPath_re
+                    
+                    stF=cmds.textField("hr_stF", q=1, text=1)
+                    endF=cmds.textField("hr_endF", q=1, text=1)
+                    
+                    if(int(endF)<=int(stF)):
+                        cmds.error("set startFrame < endFrame")
+                    else:
+                    #print stF, endF
+                        save_name=[]
+                        
+                        for i in nameList:
+                            save_name.append(fPath_re+i)
+                        #print save_name
+                        for i in range(len(outList)):
+                            command=("-framerange "+str(stF)+" "+str(endF)+" -step -0.25 -step 0 -step 0.25 -uvWrite -worldSpace -writeVisibility -dataFormat ogawa -root " + outList[i] + " -file " + save_name[i]+".abc")
+                            print command
+                            cmds.AbcExport ( j = command )
+                        sys.stdout.write("alembic path: "+fPath_re)
+                else:
+                    sys.stderr.write("Export cancled.")
+            else:
+                textGrp=textNs[-1]
+                cd=cmds.confirmDialog(title="confirm", message="Have you checked all the options?", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+                if cd=="Yes":
+                    outList=cmds.listRelatives(textGrp, c=1)
+                    #print outList
+                    nameList=self.hr_findDescriptionName()
+                    fPath_re=self.hr_alembicPath()
+                     
+                    if not os.path.exists(fPath_re):#만들어진 폴더 없을 때 
+                        os.makedirs(fPath_re)
+                    
+                    self.fPath_re=fPath_re
+                    
+                    stF=cmds.textField("hr_stF", q=1, text=1)
+                    endF=cmds.textField("hr_endF", q=1, text=1)
+                    
+                    if(int(endF)<=int(stF)):
+                        cmds.error("set startFrame < endFrame")
+                    else:
+                    #print stF, endF
+                        save_name=[]
+                        
+                        for i in nameList:
+                            save_name.append(fPath_re+i)
+                        #print save_name
+                        for i in range(len(outList)):
+                            command=("-framerange "+str(stF)+" "+str(endF)+" -step -0.25 -step 0 -step 0.25 -uvWrite -worldSpace -writeVisibility -dataFormat ogawa -root " + outList[i] + " -file " + save_name[i]+".abc")
+                            print command
+                            cmds.AbcExport ( j = command )
+                        sys.stdout.write("alembic path: "+fPath_re)
+                else:
+                    sys.stderr.write("Export cancled.")
+                
+    def hr_cacheUI(self, *args):
+        if cmds.columnLayout("hrCacheUI", q=1, vis=0)==0:
+            cmds.columnLayout("hrCacheUI", e=1, vis=1)
+        else:
+            cmds.columnLayout("hrCacheUI", e=1, vis=0)
+            cmds.window(self.win, e=1, h=100)
+    
+    def hr_openHairCachePath(self, *args):
+        fPath_re=self.hr_alembicPath()
+        os.startfile(fPath_re)
+    
+    def hr_printHairCachePath(self, *args):
+        fPath_re=self.hr_alembicPath()
+        sys.stdout.write(fPath_re)
+    
+    def setGuideCache(self, *args):
+        setDescriptionCache.main()
+        sys.stdout.write("\nguide cache connected to xgen description")
+    
+    def hr_refreshCacheOption(self, *args):
+        self.hr_alembicPath()
+        self.hr_frameV()
+        
+    def hr_yetiUI(self, *args):
+        if cmds.columnLayout("yeti_hrSetUI", q=1, vis=0)==0:
+            cmds.columnLayout("yeti_hrSetUI", e=1, vis=1)
+        else:
+            cmds.columnLayout("yeti_hrSetUI", e=1, vis=0)
+            cmds.window(self.win, e=1, h=100)                
+        
+    #3-1. set cache path
+    
+    def cachePathV(self, *args):
+        currentPath=cmds.file(q=1, sn=1)
+        return currentPath
+    
+    def initSolverV(self, *args):
+        initV=cmds.textField("cacheSolver", q=1, text=1)
+        return initV
+    
+    def dirV(self, *args):
+        path=self.cachePathV()
+        #print "dirV 01. "+path
+        p_split=path.split("/")
+        dirPath="/".join(p_split[0:-1])+"/"
+        #print "dirV 02.  "+dirPath
+        fileName=p_split[-1]
+        fileTmp=fileName.split(".")
+        dirName=fileTmp[0]+"_qlCache"
+        directory=os.path.dirname(dirPath+dirName+"/")
+        return directory
+    
+    def currentCacheDirV(self, *args):
+        qlShape=cmds.ls(type="qlClothShape")
+        curPath=cmds.getAttr(qlShape[0]+".cacheFolder")
+        slash=curPath.replace("\\", "/")
+        tmp=slash.split("/")
+        tmp2="/".join(tmp[0:-2])
+        return tmp2
+
+    def currentFolderIn(self, *args):
+        currentPath=self.currentCacheDirV()
+        inPath=os.walk(currentPath).next()[1]
+        path=currentPath+"/"+inPath[0]
+        currentV=os.walk(path).next()[1]
+        return currentV
+
+    def initSolver_qlCache(self, *args):
+        svTmp=cmds.ls(sl=1)
+        
+        if svTmp==[]:
+            cmds.select(cl=1)
+            cmds.error("you must select qlSolver to make cache")
+        elif cmds.objectType(cmds.pickWalk(svTmp[0], d="down"))=="qlSolverShape":
+            cmds.select(cl=1)
+            cmds.textField("cacheSolver", e=1, text=svTmp[0])
+            cmds.textField("cachePath", e=1, text=self.currentCacheDirV())
+            version=self.currentFolderIn()  
+            cmds.textScrollList("cacheFolderList", edit=1, ra=1)
+            cmds.textScrollList("cacheFolderList", edit=1, ams=0, a=version)
+            #print version
+        else:
+            cmds.select(cl=1)
+            cmds.error("you must select qlSolver to make cache")
+            
+    def makeCacheFolder(self, *args):
+        svTmp=[self.initSolverV()]
+        solver=svTmp[0]
+        s_split=solver.split(":")
+        s_nameSpace=s_split[0]
+        
+        cache="Cache"
+        cacheName=[]
+        
+        path=self.cachePathV()
+        
+        directory=self.dirV()
+        n_cacheF=[]
+        folderName=[]
+        inFolder=directory+"/"
+        cacheFolder=[]
+        dirList=[]
+        
+        #하.. 청기올려백기내려백기올라가면청기내리지마... 
+        if svTmp[0]=="":#지정된 솔버 없을때
+            cmds.error("init solver first")
+        else:#지정된 솔버 있음          
+            if "qlSolver" in s_nameSpace:#네임스페이스 없음
+                qlCloth=cmds.ls(type="qlClothShape")
+                for i in qlCloth:
+                    cacheName.append(i+cache)
+                
+                n_cacheF=s_nameSpace
+                
+                cacheFolder=inFolder+n_cacheF
+                
+                if not os.path.exists(directory):#만들어진 폴더 없음
+                    os.makedirs(directory)
+                    os.makedirs(inFolder+n_cacheF)
+                dirList=os.walk(cacheFolder).next()[1]
+                
+                get_num=""
+                
+                if len(dirList)==0:#만들어진 캐시 버전 폴더 없음 
+                    os.makedirs(cacheFolder+"/"+"v0001")
+                    firstCachePath=(cacheFolder+"/"+"v0001")
+                    for i in qlCloth:
+                        cacheName.append(i+cache)
+                    for i in range(len(qlCloth)):
+                        cmds.setAttr(qlCloth[i]+".cacheName", cacheName[i], type="string")
+                        cmds.setAttr(qlCloth[i]+".cacheFolder", firstCachePath, type="string")
+                    cacheV="v0001"
+                    sys.stdout.write("IKnote: make cache folder "+cacheV)
+                    cmds.textField("cachePath", e=1, text=firstCachePath)
+                
+                elif len(dirList)>0:#만들어진 캐시 버전 폴더 있음 
+                    for i in range(1, len(dirList)+1):
+                        get_num="{:04d}".format(i+1)
+                        folderName=cacheFolder+"/"+"v"+"%s"%(get_num)
+                        if not os.path.exists(folderName):#v+nnnn폴더 만듦
+                            os.makedirs(folderName)   
+                         
+                    for i in range(len(qlCloth)):
+                        cacheName.append(qlCloth[i]+cache)
+                        cmds.setAttr(qlCloth[i]+".cacheName", cacheName[i], type="string") 
+                        cmds.setAttr(qlCloth[i]+".cacheFolder", folderName, type="string")
+                    
+                    cacheV=folderName.split("/")[-1]
+                    #print cacheV
+                    sys.stdout.write("IKnote: make cache folder "+cacheV)
+                    cmds.textField("cachePath", e=1, text=folderName)
+                
+            else:#네임스페이스 있음 
+                n_cacheF=s_split[-1]
+                cacheFolder=inFolder+n_cacheF+"_"+s_nameSpace
+                print cacheFolder
+                #qlClothF=cmds.ls(type="qlClothShape")
+                qlClothF=cmds.listRelatives(s_nameSpace+":qlCloth", c=1)
+                qlCloth=[]
+                
+                for i in qlClothF:
+                    qlCloth.append(i.replace(s_nameSpace+":",""))
+                    
+                #print qlCloth
+                    
+                if not os.path.exists(directory):
+                    os.makedirs(directory+"_"+s_nameSpace)
+                if not os.path.exists(cacheFolder):
+                    os.makedirs(cacheFolder)
+                
+                dirList=os.walk(cacheFolder).next()[1]
+                
+                get_num=""
+                
+                if len(dirList)==0:
+                    os.makedirs(cacheFolder+"/"+"v0001")
+                    firstCachePath=(cacheFolder+"/"+"v0001")
+                    for i in qlCloth:
+                        cacheName.append(i+cache)
+                    for i in range(len(qlClothF)):
+                        cmds.setAttr(qlClothF[i]+".cacheName", cacheName[i], type="string")
+                        cmds.setAttr(qlClothF[i]+".cacheFolder", firstCachePath, type="string")
+                    cacheV="v0001"
+                    sys.stdout.write("IKnote: make cache folder "+cacheV)
+                    cmds.textField("cachePath", e=1, text=firstCachePath)
+                
+                elif len(dirList)>0:
+                    for i in range(1, len(dirList)+1):
+                        get_num="{:04d}".format(i+1)
+                        folderName=cacheFolder+"/"+"v"+"%s"%(get_num)
+                        if not os.path.exists(folderName):
+                            os.makedirs(folderName)  
+                    cmds.textField("cachePath", e=1, text=folderName)
+                
+                    for i in qlCloth:
+                        cacheName.append(i+cache)
+                    for i in range(len(cacheName)):
+                        cmds.setAttr(s_nameSpace+":"+qlCloth[i]+".cacheName", cacheName[i], type="string")
+                        cmds.setAttr(s_nameSpace+":"+qlCloth[i]+".cacheFolder", folderName, type="string")
+                        #왜 굳이 qlCloth를 따로 만들어 담았냐면.. 캐시 이름에는 네임스페이스 들어가면 안 되니까 그런 것임 까먹을까봐 달아놓음. 
+
+                    cacheV=folderName.split("/")[-1]
+                    sys.stdout.write("IKnote: make cache folder "+cacheV+"\n")
+            
+            dirList=os.walk(cacheFolder).next()[1]
+            cmds.textScrollList("cacheFolderList", edit=1, ra=1)
+            cmds.textScrollList("cacheFolderList", edit=1, ams=0, a=dirList)
+    
+    def pathScrollList(self, *args):
+        version=self.currentFolderIn()     
+        cmds.textScrollList("cacheFolderList", edit=1, ra=1)
+        cmds.textScrollList("cacheFolderList", edit=1, ams=0, a=version)
+    
+    def reassignPath(self, *args):
+        path=self.dirV()
+        solver=self.initSolverV()
+        s_split=solver.split(":")
+        s_nameSpace=s_split[0]
+        svPath=s_split[-1]
+        cPath=path+"/"+svPath+"/"
+        
+        cs=[self.initSolverV()]
+        if cs[0]=="":
+            pass
+        else:
+            selPath=cmds.textScrollList("cacheFolderList", q=1, si=1)
+            #print selPath
+            rePath=cPath+selPath[0]
+            if "qlSolver" in s_nameSpace:
+                qlCloth=cmds.ls("*qlCloth*", type="qlClothShape")
+                for i in qlCloth: 
+                    cmds.setAttr(i+".cacheFolder", rePath, type="string")
+                sys.stdout.write("IKnote: path reassigned. current path: "+selPath[0]+"\n")
+            else:
+                qlClothF=cmds.ls("*:qlCloth*", type="qlClothShape")
+                #qlCloth=[]
+                for i in qlClothF:
+                    cmds.setAttr(i+".cacheFolder", rePath, type="string")      
+                sys.stdout.write("IKnote: path reassigned. current path: "+selPath[0]+"\n")
+            
+            cmds.textField("cachePath", e=1, text=rePath)
+        
+    def printPath(self, *args):
+        path=cmds.textField("cachePath", q=1, text=1)
+        sys.stdout.write("\n"+path)
+        
+    def openCacheDir(self, *args):
+        path=cmds.textField("cachePath", q=1, text=1)
+        os.startfile(path)
+
+    def clearCache(self, *args):
+        sel=cmds.ls(sl=1)
+        if sel==[]:
+            sel=self.initSolverV()
+            cd=cmds.confirmDialog(title="confirm", message="clear all qlCache", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+            if cd=="Yes":
+                cmds.select(sel)
+                mel.eval("qlClearCache;")
+                sys.stdout.write("qlCache cleared.")
+            else:
+                pass
+        else:
+            cd=cmds.confirmDialog(title="confirm", message="clear selected qlCache", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+            if cd=="Yes":
+                mel.eval("qlClearCache;")
+                sys.stdout.write("qlCache cleared.")
+            else:
+                pass            
+    
+    def truncateCache(self, *args):
+        curF=int(cmds.currentTime(q=1))
+        sel=cmds.ls(sl=1)
+        if sel==[]:
+            sel=self.initSolverV()
+            cd=cmds.confirmDialog(title="confirm", message="truncate qlCache", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+            if cd=="Yes":
+                cmds.select(sel)
+                mel.eval("qlTruncateCache;")
+                sys.stdout.write("truncate cache: "+str(curF)+"frame")
+            else:
+                pass
+        else:
+            cd=cmds.confirmDialog(title="confirm", message="truncate qlCache", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+            if cd=="Yes":
+                cmds.select(sel)
+                mel.eval("qlTruncateCache;")
+                sys.stdout.write("truncate cache: "+str(curF)+"frame")
+            else:
+                pass
+    
+    def exptWrapCache(self, *args):
+        tmp=cmds.file(q=1, sn=1)
+        #print tmp
+        tmp2=tmp.split("/")
+        #print tmp2
+        tmp3="/".join(tmp2[0:-2])
+        #print tmp3
+        tmp4=tmp3+"/cache/alembic/wrapAlembic/"
+        #print tmp4
+
+        if not os.path.exists(tmp4):
+            os.makedirs(tmp4)
+        
+        Geo=cmds.ls("GrpGeo")
+        if Geo==[]:
+            Geo=cmds.ls("*:GrpGeo")
+        
+        cmds.select(Geo)
+        cmds.pickWalk(d="up")
+        assetN=cmds.ls(sl=1)
+        cmds.select(cl=1)
+        
+        nwc=cmds.ls(sl=1)
+        if nwc==[]:
+            nwc=cmds.ls("wrap_cloth")
+            if nwc==[]:
+                nwc_n=cmds.ls("*:wrap_cloth")
+                nwc_n.split(":")
+                nwc=nwc_n[-1]
+        #print nwc
+
+        fileCount=os.walk(tmp4).next()[2]
+        #print fileCount
+        stF=int(cmds.playbackOptions(q=True, min=True))
+        endF=int(cmds.playbackOptions(q=True, max=True))
+
+        if len(fileCount)==0:
+            num="v0001"
+            save_name=tmp4+assetN[0]+"_"+nwc[0]+"_"+num
+            command=("-framerange "+str(stF)+" "+str(endF)+" -frameRelativeSample 0 -frameRelativeSample 0 -frameRelativeSample 0 -uvWrite -worldSpace -writeVisibility -dataFormat ogawa -root " + nwc[0] + " -file " + save_name+".abc")
+            cmds.AbcExport ( j = command )
+            
+            sys.stdout.write(save_name+" export complete")
+
+        elif len(fileCount)>0:#만들어진 캐시 버전 폴더 있음 
+            for i in range(1, len(fileCount)+1):
+                num="v"+"{:04d}".format(i+1)
+                save_name=tmp4+assetN[0]+"_"+nwc[0]+"_"+num
+            command=("-framerange "+str(stF)+" "+str(endF)+" -frameRelativeSample 0 -frameRelativeSample 0 -frameRelativeSample 0 -uvWrite -worldSpace -writeVisibility -dataFormat ogawa -root " + nwc[0] + " -file " + save_name+".abc")
+            #print command
+            cmds.AbcExport ( j = command )
+            
+            sys.stdout.write(save_name+" export complete")
+        
+    #4-1. set hair cache path
+    
+    def hr_initSolverV(self, *args):
+        hr_initV=cmds.textField("hr_cacheSolver", q=1, text=1)
+        return hr_initV
+
+    def hr_dirV(self, *args):
+        hr_path=self.cachePathV()
+        #print "dirV 01. "+path
+        hr_p_split=hr_path.split("/")
+        hr_dirPath="/".join(hr_p_split[0:-1])+"/"
+        #print "dirV 02.  "+dirPath
+        hr_fileName=hr_p_split[-1]
+        hr_fileTmp=hr_fileName.split(".")
+        hr_dirName=hr_fileTmp[0]+"_hrCache"
+        hr_directory=os.path.dirname(hr_dirPath+hr_dirName+"/")
+        return hr_directory
+            
+    def hr_currentCacheDirV(self, *args):
+        hr_qlShape=cmds.ls(type="hrHairSystemShape")
+        hr_curPath=cmds.getAttr(hr_qlShape[0]+".cacheFolder")
+        hr_slash=hr_curPath.replace("\\", "/")
+        hr_tmp=hr_slash.split("/")
+        hr_tmp2="/".join(hr_tmp[0:-2])
+        return hr_tmp2
+    
+    def hr_currentFolderIn(self, *args):
+        currentPath=self.hr_currentCacheDirV()
+        inPath=os.walk(currentPath).next()[1]
+        path=currentPath+"/"+inPath[0]
+        currentV=os.walk(path).next()[1]
+        return currentV
+    
+    def initSolver_hrCache(self, *args):
+        svTmp=cmds.ls(sl=1)
+        
+        if svTmp==[]:
+            cmds.select(cl=1)
+            cmds.error("you must select hrSolver to make cache")
+        elif cmds.objectType(cmds.pickWalk(svTmp[0], d="down"))=="hrSolverShape":
+            cmds.select(cl=1)
+            cmds.textField("hr_cacheSolver", e=1, text=svTmp[0])
+            cmds.textField("hr_cachePath", e=1, text=self.hr_currentCacheDirV())
+            version=self.hr_currentFolderIn()
+            cmds.textScrollList("hr_cacheFolderList", edit=1, ra=1)
+            cmds.textScrollList("hr_cacheFolderList", edit=1, ams=0, a=version)
+        else:
+            cmds.select(cl=1)
+            cmds.error("you must select hrSolver to make cache")
+            
+    def hr_makeCacheFolder(self, *args):
+        hr_svTmp=[self.hr_initSolverV()]
+        hr_solver=hr_svTmp[0]
+        hr_s_split=hr_solver.split(":")
+        hr_s_nameSpace=hr_s_split[0]
+        
+        hr_cache="Cache"
+        hr_cacheName=[]
+        
+        hr_path=self.cachePathV()
+        
+        hr_directory=self.hr_dirV()
+        hr_n_cacheF=[]
+        hr_folderName=[]
+        hr_inFolder=hr_directory+"/"
+        hr_cacheFolder=[]
+        hr_dirList=[]
+        
+        if hr_svTmp[0]=="":#지정된 솔버 없을때
+            cmds.error("init solver first")
+        else:#지정된 솔버 있음          
+            if "hrSolver" in hr_s_nameSpace:#네임스페이스 없음
+                hairSys=cmds.ls(type="hrHairSystemShape")
+                print hr_s_nameSpace
+                #print "notNameSpace  "+hairSys[0]
+                for i in hairSys:
+                    cmds.setAttr(i+".relativeFrameNumber", 0)
+                    hr_cacheName.append(i.replace("hrHairSystemShape", "hair_"+hr_cache))
+                
+                hr_n_cacheF=hr_s_nameSpace
+                
+                hr_cacheFolder=hr_inFolder+hr_n_cacheF
+                
+                if not os.path.exists(hr_directory):#만들어진 폴더 없음
+                    os.makedirs(hr_directory)
+                    os.makedirs(hr_inFolder+hr_n_cacheF)
+                hr_dirList=os.walk(hr_cacheFolder).next()[1]
+                
+                hr_get_num=""
+                
+                if len(hr_dirList)==0:#만들어진 캐시 버전 폴더 없음 
+                    os.makedirs(hr_cacheFolder+"/"+"v0001")
+                    hr_firstCachePath=(hr_cacheFolder+"/"+"v0001")
+                    #print "asdf"+firstCachePath
+                    for i in hairSys:
+                        hr_cacheName.append(i+hr_cache)
+                    for i in range(len(hairSys)):
+                        cmds.setAttr(hairSys[i]+".cacheName", hr_cacheName[i], type="string")
+                        cmds.setAttr(hairSys[i]+".cacheFolder", hr_firstCachePath, type="string")
+                    cacheV="v0001"
+                    sys.stdout.write("IKnote: make cache folder "+cacheV)
+                    cmds.textField("cachePath", e=1, text=hr_firstCachePath)
+                
+                elif len(hr_dirList)>0:#만들어진 캐시 버전 폴더 있음 
+                    for i in range(1, len(hr_dirList)+1):
+                        hr_get_num="{:04d}".format(i+1)
+                        hr_folderName=hr_cacheFolder+"/"+"v"+"%s"%(hr_get_num)
+                        if not os.path.exists(hr_folderName):#v+nnnn폴더 만듦
+                            os.makedirs(hr_folderName)   
+                         
+                    for i in range(len(hairSys)):
+                        hr_cacheName.append(hairSys[i]+hr_cache)
+                        cmds.setAttr(hairSys[i]+".cacheName", hr_cacheName[i], type="string") 
+                        cmds.setAttr(hairSys[i]+".cacheFolder", hr_folderName, type="string")
+                    
+                    hr_cacheV=hr_folderName.split("/")[-1]
+                    #print cacheV
+                    sys.stdout.write("IKnote: make cache folder "+hr_cacheV)
+                    cmds.textField("hr_cachePath", e=1, text=hr_folderName)
+                    print hr_folderName 
+                
+            else:#네임스페이스 있음 
+                hr_n_cacheF=hr_s_split[-1]
+                hr_cacheFolder=hr_inFolder+hr_n_cacheF
+                hairSysF=cmds.ls(type="hrHairSystemShape")
+                hairSys=[]
+                
+                for i in hairSysF:
+                    cmds.setAttr(i+".relativeFrameNumber", 0)
+                    hairSys.append(i.strip(hr_s_nameSpace+":"))
+                    
+                if not os.path.exists(hr_directory):
+                    os.makedirs(hr_directory)
+                    os.makedirs(hr_inFolder+hr_n_cacheF)
+                
+                hr_dirList=os.walk(hr_cacheFolder).next()[1]
+                
+                hr_get_num=""
+                
+                if len(hr_dirList)==0:
+                    os.makedirs(hr_cacheFolder+"/"+"v0001")
+                    hr_firstCachePath=(hr_cacheFolder+"/"+"v0001")
+                    for i in hairSys:
+                        hr_cacheName.append(i+hr_cache)
+                    for i in range(len(hairSysF)):
+                        cmds.setAttr(hairSysF[i]+".cacheName", hr_cacheName[i], type="string")
+                        cmds.setAttr(hairSysF[i]+".cacheFolder", hr_firstCachePath, type="string")
+                    hr_cacheV="v0001"
+                    sys.stdout.write("IKnote: make cache folder "+hr_cacheV)
+                    cmds.textField("cachePath", e=1, text=hr_firstCachePath)                    
+                
+                elif len(hr_dirList)>0:
+                    for i in range(1, len(hr_dirList)+1):
+                        hr_get_num="{:04d}".format(i+1)
+                        hr_folderName=hr_cacheFolder+"/"+"v"+"%s"%(hr_get_num)
+                        if not os.path.exists(hr_folderName):
+                            os.makedirs(hr_folderName)  
+                    cmds.textField("hr_cachePath", e=1, text=hr_folderName)  
+                    print hr_folderName       
+                
+                    for i in hairSys:
+                        hr_cacheName.append(i.replace("hrHairSystemShape", "hair"+hr_cache))
+                    for i in range(len(hr_cacheName)):
+                        #print hairSys[i]
+                        cmds.setAttr(hr_s_nameSpace+":"+hairSys[i]+".cacheName", hr_cacheName[i], type="string")
+                        cmds.setAttr(hr_s_nameSpace+":"+hairSys[i]+".cacheFolder", hr_folderName, type="string")
+                        #왜 굳이 hairSys를 따로 만들어 담았냐면.. 캐시 이름에는 네임스페이스 들어가면 안 되니까 그런 것임 까먹을까봐 달아놓음. 
+
+                    hr_cacheV=hr_folderName.split("/")[-1]
+                    sys.stdout.write("IKnote: make cache folder "+hr_cacheV)
+            
+            hr_dirList=os.walk(hr_cacheFolder).next()[1]
+            cmds.textScrollList("hr_cacheFolderList", edit=1, ra=1)
+            cmds.textScrollList("hr_cacheFolderList", edit=1, ams=0, a=hr_dirList)
+            
+    def hr_pathScrollList(self, *args):
+        version=self.hr_currentFolderIn()
+        cmds.textScrollList("hr_cacheFolderList", edit=1, ra=1)
+        cmds.textScrollList("hr_cacheFolderList", edit=1, ams=0, a=version)
+        
+    def hr_reassignPath(self, *args):
+        hr_path=self.hr_dirV()
+        hr_solver=self.hr_initSolverV()
+        hr_s_split=hr_solver.split(":")
+        hr_s_nameSpace=hr_s_split[0]
+        hr_svPath=hr_s_split[-1]
+        hr_cPath=hr_path+"/"+hr_svPath+"/"
+        
+        hr_cs=[self.hr_initSolverV()]
+        if hr_cs[0]=="":
+            pass
+        else:
+            hr_selPath=cmds.textScrollList("hr_cacheFolderList", q=1, si=1)
+            hr_rePath=hr_cPath+hr_selPath[0]
+            if "hrSolver" in hr_s_nameSpace:
+                hairSys=cmds.ls(type="hrHairSystemShape")
+                for i in hairSys: 
+                    cmds.setAttr(i+".cacheFolder", hr_rePath, type="string")
+                sys.stdout.write("IKnote: path reassigned. current path: "+hr_selPath[0]+"\n")
+            else:
+                hairSysF=cmds.ls(type="hrHairSystemShape")
+                for i in hairSysF:
+                    cmds.setAttr(i+".cacheFolder", hr_rePath, type="string")      
+                sys.stdout.write("IKnote: path reassigned. current path: "+hr_selPath[0]+"\n")
+            
+            cmds.textField("hr_cachePath", e=1, text=hr_rePath)
+        
+    def hr_printPath(self, *args):
+        hr_path=cmds.textField("hr_cachePath", q=1, text=1)
+        sys.stdout.write("\n"+hr_path)
+        
+    def hr_openCacheDir(self, *args):
+        hr_path=cmds.textField("hr_cachePath", q=1, text=1)
+        os.startfile(hr_path)
+
+    def hr_clearCache(self, *args):
+        sel=cmds.ls(sl=1)
+        if sel==[]:
+            sel=self.hr_initSolverV()
+            cd=cmds.confirmDialog(title="confirm", message="clear all hrCache", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+            if cd=="Yes":
+                cmds.select(sel)
+                mel.eval("hrClearCache;")
+                sys.stdout.write("hrCache cleared.")
+            else:
+                pass
+        else:
+            cd=cmds.confirmDialog(title="confirm", message="clear all hrCache", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+            if cd=="Yes":
+                mel.eval("hrClearCache;")
+                sys.stdout.write("hrCache cleared."+"\n")
+            else:
+                pass            
+    
+    def hr_truncateCache(self, *args):
+        curF=int(cmds.currentTime(q=1))
+        sel=cmds.ls(sl=1)
+        if sel==[]:
+            sel=self.hr_initSolverV()
+            cd=cmds.confirmDialog(title="confirm", message="truncate qlCache", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+            if cd=="Yes":
+                cmds.select(sel)
+                mel.eval("hrTruncateCache;")
+                sys.stdout.write("truncate cache: "+str(curF)+"frame")
+            else:
+                pass
+        else:
+            cd=cmds.confirmDialog(title="confirm", message="truncate hrCache", button=["Yes", "No"], defaultButton='Yes', cancelButton='No', dismissString='No', bgc=self.IKpink)
+            if cd=="Yes":
+                cmds.select(sel)
+                mel.eval("hrTruncateCache;")
+                sys.stdout.write("truncate cache: "+str(curF)+"frame")
+            else:
+                pass    
+
+######################auto color assign###########################
+
+    def colorCodes(self, color, selection=None):
+        # Get selection
+        if selection == None:
+            selOrg = self.checkSel() # Check validity    
+            selOrg = self.cleanString(selOrg) # Clean string/list 
+        else:
+            selOrg = selection
+
+        # Checks for explicit name (the color), then creates/apply the lambert
+        if color == 1:
+            if cmds.objExists("colRed") == False:
+                cmds.createNode( "lambert", name="colRed" )
+                cmds.setAttr( "colRed.color", self.swCol1[0], self.swCol1[1], self.swCol1[2], type="double3" )
+            colorString = "colRed"
+
+        elif color == 2:
+            if cmds.objExists("colGreen") == False:
+                cmds.createNode( "lambert", name="colGreen" )
+                cmds.setAttr( "colGreen.color", self.swCol2[0], self.swCol2[1], self.swCol2[2], type="double3" )
+            colorString = "colGreen"
+
+        elif color == 3:
+            if cmds.objExists("colBlue") == False:
+                cmds.createNode( "lambert", name="colBlue" )
+                cmds.setAttr( "colBlue.color", self.swCol3[0], self.swCol3[1], self.swCol3[2], type="double3" )
+            colorString = "colBlue"
+
+        elif color == 4:
+            if cmds.objExists("colCyan") == False:
+                cmds.createNode( "lambert", name="colCyan" )
+                cmds.setAttr( "colCyan.color", self.swCol4[0], self.swCol4[1], self.swCol4[2], type="double3" )
+            colorString = "colCyan"
+
+        elif color == 5:
+            if cmds.objExists("colMagenta") == False:
+                cmds.createNode( "lambert", name="colMagenta" )
+                cmds.setAttr( "colMagenta.color", self.swCol5[0], self.swCol5[1], self.swCol5[2], type="double3" )
+            colorString = "colMagenta"
+
+        elif color == 6:
+            if cmds.objExists("colYellow") == False:
+                cmds.createNode( "lambert", name="colYellow" )
+                cmds.setAttr( "colYellow.color", self.swCol6[0], self.swCol6[1], self.swCol6[2], type="double3" )
+            colorString = "colYellow"
+
+        elif color == 7:
+            if cmds.objExists("colAzure") == False:
+                cmds.createNode( "lambert", name="colAzure" )
+                cmds.setAttr( "colAzure.color", self.swCol7[0], self.swCol7[1], self.swCol7[2], type="double3" )
+            colorString = "colAzure"
+
+        elif color == 8:
+            if cmds.objExists("colChartreuse") == False:
+                cmds.createNode( "lambert", name="colChartreuse" )
+                cmds.setAttr( "colChartreuse.color", self.swCol8[0], self.swCol8[1], self.swCol8[2], type="double3" )
+            colorString = "colChartreuse"
+
+        elif color == 9:
+            if cmds.objExists("colOrange") == False:
+                cmds.createNode( "lambert", name="colOrange" )
+                cmds.setAttr( "colOrange.color", self.swCol9[0], self.swCol9[1], self.swCol9[2], type="double3" )
+            colorString = "colOrange"
+
+        elif color == 10:
+            if cmds.objExists("colRose") == False:
+                cmds.createNode( "lambert", name="colRose" )
+                cmds.setAttr( "colRose.color", self.swCol10[0], self.swCol10[1], self.swCol10[2], type="double3" )
+            colorString = "colRose"
+
+        elif color == 11:
+            if cmds.objExists("colSGreen") == False:
+                cmds.createNode( "lambert", name="colSGreen" )
+                cmds.setAttr( "colSGreen.color", self.swCol11[0], self.swCol11[1], self.swCol11[2], type="double3" )
+            colorString = "colSGreen"
+
+        elif color == 12:
+            if cmds.objExists("colViolet") == False:
+                cmds.createNode( "lambert", name="colViolet" )
+                cmds.setAttr( "colViolet.color", self.swCol12[0], self.swCol12[1], self.swCol12[2], type="double3" )
+            colorString = "colViolet"
+
+        elif color == 13:
+            if cmds.objExists("colOlive") == False:
+                cmds.createNode( "lambert", name="colOlive" )
+                cmds.setAttr( "colOlive.color", self.swCol13[0], self.swCol13[1], self.swCol13[2], type="double3" )
+            colorString = "colOlive"
+
+        elif color == 14:
+            if cmds.objExists("colPurple") == False:
+                cmds.createNode( "lambert", name="colPurple" )
+                cmds.setAttr( "colPurple.color", self.swCol14[0], self.swCol14[1], self.swCol14[2], type="double3" )
+            colorString = "colPurple"
+
+        elif color == 15:
+            if cmds.objExists("colTeal") == False:
+                cmds.createNode( "lambert", name="colTeal" )
+                cmds.setAttr( "colTeal.color", self.swCol15[0], self.swCol15[1], self.swCol15[2], type="double3" )
+            colorString = "colTeal"
+
+        elif color == 16:
+            if cmds.objExists("colWhite") == False:
+                cmds.createNode( "lambert", name="colWhite" )
+                cmds.setAttr( "colWhite.color", self.swCol16[0], self.swCol16[1], self.swCol16[2], type="double3" )
+            colorString = "colWhite"
+        
+        # Select and apply shader
+        cmds.select(selOrg)
+        cmds.hyperShade(assign=colorString)
+
+    def cleanString(self, string):
+
+        # Clean away the unicode crap from a string/list
+        index = 0
+        while index < len(string):
+            string[index] = str(string[index])
+            index += 1
+
+        # Determine if string or string array and then return appropiate type
+        if len(string) == 1:
+            string = string[0] # convert to single string
+        else:
+            pass
+
+        return string
+
+    def checkSel(self, *args):
+        selection=cmds.filterExpand(sm=(12, 34))
+        if selection==[]:
+            cmds.error("Nothing selected")
+        else:
+            return selection
+
+    def autoColorAssign(self, *args):
+
+        # Vars
+        colorPointer = 1
+        meshCount = 0
+        meshList=cmds.textScrollList("selList", q=1, ai=1)
+        #print meshList
+        if meshList ==None:
+            cmds.error("meshList is empty.")
+        else:
+            meshCount=len(meshList)
+            for i in meshList:
+                self.colorCodes(colorPointer, i)
+                if colorPointer==16:
+                    colorPointer=1
+                else:
+                    colorPointer +=1
+        
+        cmds.select(cl=1)
+        
+def run_IK_simSettingTool():
+    run=IK_simSettingTool()
+    run.ik_ui()
+      
+run_IK_simSettingTool()
