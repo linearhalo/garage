@@ -1,0 +1,187 @@
+# -- coding: utf-8 --
+# IK tools
+
+import maya.cmds as cmds
+import maya.mel as mel
+import sys, os
+
+class IK_renameTool():
+    
+    def __init__(self):
+        
+        self.win = "Quick_renameTool_py"
+        self.IKwhite=[.95,.95,.95]
+        self.IKblack=[0,0,0]
+        self.IKgray=[.24,.24,.24]
+        self.mikuGr=[.6,.8,.8]
+        self.IKpink=[1,.8,.8]
+        self.IKblue=[.6,.79,.93]
+        self.sysWhite=[1, 1, 1]
+
+    ##############################
+    #         UI setting         #
+    ##############################
+
+    def ik_ui(self):
+        
+            
+        if cmds.window (self.win, exists=1)==True :
+                cmds.deleteUI(self.win)
+        cmds.window(self.win, bgc=self.IKgray, w=200, h=100)
+
+        cmds.rowColumnLayout(adj=1)
+        
+        cmds.text(l="", h=5)
+        
+        cmds.rowColumnLayout(nc=4, cw=[(1, 20), (2, 50), (3, 180), (4, 25)])
+        cmds.text(l="")
+        cmds.text(l="rename : ", al="right")
+        cmds.textField("renameTxt", ed=1, bgc=self.IKwhite)
+        cmds.text(l="")
+        cmds.setParent("..")
+
+        cmds.rowColumnLayout(nc=7, cw=[(1, 20), (2, 50), (3, 50), (4, 20), (5, 60), (6, 50), (7, 25)])
+        cmds.text(l="")
+        cmds.text(l="start # : ", al="right")
+        cmds.intField("stTxt", v=1, ed=1, bgc=self.IKwhite)
+        cmds.text(l="")
+        cmds.text(l="padding : ", al="right")
+        cmds.intField("padding", v=2, ed=1, bgc=self.IKwhite)
+        cmds.text(l="")
+        cmds.setParent("..")
+        
+        cmds.text(l="", h=5)
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 5), (2, 265), (3, 5)])
+        cmds.text(l="")
+        cmds.button(l="Rename and Number", bgc=self.mikuGr, h=21, c=self.rename)
+        cmds.text(l="")
+        cmds.setParent("..")
+        
+        cmds.rowColumnLayout(nc=3, cw = [(1,5) , (2,265), (3,5)])
+        cmds.text( l="")
+        cmds.separator(style="in")
+        cmds.text( l="")
+        cmds.setParent('..')  
+        
+        cmds.rowColumnLayout(nc=6, cw=[(1, 20), (2, 45), (3, 5), (4, 140), (5, 5), (6, 40)])
+        cmds.text(l="")
+        
+        cmds.rowColumnLayout(nr=2, rh=[(1, 22), (2, 22)])
+        cmds.text(l="before : ", al="right")
+        cmds.text(l="after : ", al="right")
+        cmds.setParent("..")    
+        
+        cmds.rowColumnLayout(nr=2, rh=[(1, 20), (2, 20)])
+        cmds.text(l="", h=10)
+        cmds.text(l="")
+        cmds.setParent("..")
+
+        cmds.rowColumnLayout(nr=3, rh=[(1, 20), (2, 5), (3, 20)])
+        cmds.textField("beforeTxt", ed=1, text="prifix_", bgc=self.IKwhite, w=140)
+        cmds.text(l="")
+        cmds.textField("afterTxt", ed=1, text="_suffix", bgc=self.IKwhite)
+        cmds.setParent("..")    
+        
+        cmds.rowColumnLayout(nr=3, rh=[(1, 20), (2, 20)])
+        cmds.text(l="", h=10)
+        cmds.text(l="")
+        cmds.setParent("..")   
+        
+        cmds.rowColumnLayout(nr=3, rh=[(1, 20), (2, 5), (3, 20)])
+        cmds.button(l="add", bgc=self.mikuGr, w=35)
+        cmds.text(l="")
+        cmds.button(l="add", bgc=self.mikuGr, w=35)
+        cmds.setParent("..")
+        cmds.setParent("..")         
+
+        cmds.rowColumnLayout(nc=3, cw = [(1,5) , (2,265), (3,5)])
+        cmds.text( l="")
+        cmds.separator(style="in")
+        cmds.text( l="")
+        cmds.setParent('..')
+    
+        cmds.rowColumnLayout(nc=10, cw=[(1, 6), (2, 50), (3, 3), (4, 50), (5, 3), (6, 50), (7, 3), (8, 50), (9, 3), (10, 50)])
+        cmds.text(l="")
+        cmds.button(l="_C", bgc=self.IKblue)
+        cmds.text(l="")
+        cmds.button(l="_jnt", bgc=self.IKblue)
+        cmds.text(l="")
+        cmds.button(l="_grp", bgc=self.IKblue)
+        cmds.text(l="")
+        cmds.button(l="_geo", bgc=self.IKblue)
+        cmds.text(l="")
+        cmds.button(l="_target", bgc=self.IKblue)
+        cmds.setParent('..')
+        
+        cmds.rowColumnLayout(nc=3, cw = [(1,5) , (2,265), (3,5)])
+        cmds.text( l="")
+        cmds.separator(style="in")
+        cmds.text( l="")
+        cmds.setParent('..')
+
+        cmds.rowColumnLayout(nc=5, cw=[(1, 20), (2, 45), (3, 5), (4, 180), (5, 5)])
+        cmds.text(l="")
+        
+        cmds.rowColumnLayout(nr=2, rh=[(1, 24), (2, 24)])
+        cmds.text(l="search : ", al="right")
+        cmds.text(l="replace : ", al="right")
+        cmds.setParent("..")    
+        
+        cmds.rowColumnLayout(nr=2, rh=[(1, 20), (2, 20)])
+        cmds.text(l="", h=10)
+        cmds.text(l="")
+        cmds.setParent("..")
+
+        cmds.rowColumnLayout(nr=3, rh=[(1, 20), (2, 5), (3, 20)])
+        cmds.textField("searchTxt", ed=1, bgc=self.IKwhite, w=180)
+        cmds.text(l="")
+        cmds.textField("replaceTxt", ed=1, bgc=self.IKwhite)
+        cmds.setParent("..")          
+        
+        cmds.setParent("..") 
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 23), (2, 240), (3, 1)])
+        cmds.text(l='')
+        cmds.radioButtonGrp("selRadioBt" ,nrb=3, labelArray3=("Hierarchy", "Selected", "All") , sl=1, cw3=[96, 96, 70])
+        cmds.setParent("..")
+        
+        cmds.rowColumnLayout(nc=3, cw=[(1, 5), (2, 265), (3, 5)])
+        cmds.text(l="")
+        cmds.button(l="Apply", bgc=self.mikuGr, h=21)
+        cmds.text(l="")
+        cmds.setParent("..")        
+        cmds.text(l="", h=5)
+
+        cmds.showWindow(self.win)
+
+        ###### window end ######
+
+    ##############################
+    #         def setting        #
+    ##############################   
+
+    def rename(self, mode):
+        objs=cmds.ls(sl=1, long=1)
+        objCnt=len(objs)
+        it=int
+        
+        prefix=cmds.textField("beforeTxt", q=1, text=1)
+        suffix=cmds.textField("afterTxt", q=1, text=1)
+        rename=cmds.textField("renameTxt", q=1, text=1)
+        start=cmds.intField("stTxt", q=1, v=1)
+        padding=cmds.intField("padding", q=1,)
+        
+        shortNameTmp=[]
+        shortName=[]
+        newName=[]
+        
+
+        
+
+
+def run_rename():
+    run=IK_renameTool()
+    run.ik_ui()
+
+run_rename()
