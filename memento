@@ -1,0 +1,11 @@
+#자주 잊어먹는 것들 정리해두기.
+
+os.walk("경로").next[0] : 디렉토리 경로.
+-->[1] : 디렉토리 내 디렉토리 갯수.
+-->[2] : 디렉토리 내 파일 갯수.
+
+os.path.dirname : 경로 중 디렉토리 이름
+os.path.exists : 있없
+os.makedirs : 폴더 생성
+os.startfile : 파일 실행
+os.path.splitext : 확장자
