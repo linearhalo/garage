@@ -1,0 +1,46 @@
+import maya.cmds as cmd
+import maya.mel as mel
+
+start=990
+end=1068
+#root=cmds.listRelatives(cmds.ls(sl=1), c=1)
+#rootb=[]
+
+root=cmds.ls(sl=1)
+rootb=[]
+
+for i in root:
+    rootb.append(i.replace("_description1", ""))
+
+print root
+
+
+#for i in root:
+#    rootb.append(i.replace("Grp", "|Grp_nDynamic_system|Grp"))
+#print root
+#이름때문에 추가한거지 이름 중복되는 오브젝트 아니면 이 부분은 굳이 필요 없음
+
+save_name=[]
+
+#cmds.select(cmds.ls("*_collection"))
+#description=cmds.listRelatives(cmds.ls(sl=1), c=1)
+
+for i in rootb:
+    save_name.append(i.replace(i, 'P:/shows/vfx201002_project_tl/dev/shots/s01/c003a/sim/hair/maya/cache/alembic/hair/'+i))
+
+print save_name
+'''
+for i in range(len(root)):
+    command=("-framerange"+" "+str(start)+" "+str(end)+" -frameRelativeSample -0.25 -frameRelativeSample 0 -frameRelativeSample 0.25 -uvWrite -worldSpace -writeVisibility -dataFormat hdf -root " + root[i] + " -file " + save_name[i]+".abc")
+    print command
+    cmds.AbcExport ( j = command )
+'''
+
+for i in range(len(rootb)):
+    command=("-framerange"+" "+str(start)+" "+str(end)+" -step 0.25 -uvWrite -worldSpace -writeVisibility -dataFormat hdf -root " + root[i] + " -file " + save_name[i]+".abc")
+    print command
+    cmds.AbcExport ( j = command )
+
+#-framerange+ +시작프레임+ +끝프레임+ -uvWrite -worldSpace -writeVisibility -dataFormat hdf -root +알렘빅 뽑힐 메시(fullpath)+ -file +저장될 경로와 이름+.abc
+#띄어쓰기 중요
+#변수에 문자열이 아닌 숫자만 들어 있을 때는 str(변수)
