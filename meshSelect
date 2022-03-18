@@ -1,0 +1,6 @@
+sel=cmds.ls(sl=1)
+if len(sel)>0:
+    cmds.select(cmds.listRelatives(cmds.ls(sl=1)[0], ad=1, type="mesh"))
+    cmds.pickWalk(d="up")
+else:
+    sys.stdout.write("##error: nothing selected##")
